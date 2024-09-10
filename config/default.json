@@ -6,7 +6,7 @@
         "ip": "localhost"
     }, 
 
-    "MONGO_URI":"mongodb+srv://agyinjohn97:zZmEinYKjbxocncU@cluster0.mjwns0s.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0/mnmtest",
+    "MONGO_URI":"mongodb://localhost:27017/mnmtest",
     "email": {
         "email": "autocodegrader75@gmail.com",
         "secrete": "okuiugeaouthupzv"

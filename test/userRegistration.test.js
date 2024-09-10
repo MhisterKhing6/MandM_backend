@@ -3,11 +3,14 @@ import request from "supertest";
 import { app } from "../index.js";
 import { assert } from "chai";
 import { UserModel } from "../models/user.js";
-import { after } from "mocha";
+import { after, before } from "mocha";
 const url = "/api/signup";
 
 describe("test codes for user registration", () => {
     after(async () => {
+        await UserModel.deleteMany({})
+    })
+    before(async () => {
         await UserModel.deleteMany({})
     })
     it("should return status of 400  with, not all fields giving message", async () => {

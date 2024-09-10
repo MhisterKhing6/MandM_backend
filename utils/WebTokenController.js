@@ -31,7 +31,7 @@ const decodeToken = (userToken) => {
     }
 
 
-const getAuthorizationtoken = (request) => {
+const getAuthorizationToken = (request) => {
         /**
          * getAuthorizationtoken: get authorization token from request header
          * @param {object} request: http request header
@@ -51,4 +51,4 @@ const getAuthorizationtoken = (request) => {
     }
 
 
-export {generateToken, decodeToken, getAuthorizationtoken}
+export {generateToken, decodeToken, getAuthorizationToken}

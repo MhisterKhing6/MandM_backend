@@ -1,13 +1,13 @@
 /*Handles file operation for admin*/
 import config from "config"
 import { mkdir, readFile, writeFile } from "fs"
-import path from "path"
+import path, { basename } from "path"
 import { promisify } from "util"
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
 const mkdirAsync = promisify(mkdir)
 
-const createFilePath = async (foodName) => {
+const createFilePath = async (picName, userId, type) => {
     /**
      * createDirectory: create a directory for a file
      * @param {string}:use to uniquly manage files folder structure
@@ -15,15 +15,18 @@ const createFilePath = async (foodName) => {
      */
     //get absolute path of current directory calling the function
     let abs = path.resolve(".")
+    //find type
+    if(type === "vId")
+        baseFolder = "vendors-identity";
     //join paths to get parent directory of files
-    let relativePath = path.join("public", "foodPics")
+    let relativePath = path.join("public", basename,  userId)
     let fullPath = path.join(abs, relativePath)
     //create folder on a disk
     try {
         let response = await mkdirAsync(fullPath, {recursive:true})
         //join created folder with fileName to create folder parent path
-        let filePath = path.join(fullPath, foodName)
-        let ulrPath = path.join(relativePath, foodName)
+        let filePath = path.join(fullPath, picName)
+        let ulrPath = path.join(relativePath, picName)
         return {filePath, ulrPath}
     } catch(err) {
         console.log(err)
@@ -55,11 +58,11 @@ const generateFileUrl = (filePath) => {
     let appHost = config.get("host")
     let host = process.env.HOST || appHost.ip
     let port = process.env.PORT || appHost.port
-    let terface = appHost.onePath ||  `${appHost.protocol}://${host}:${port}`
-    return `${terface}/${filePath}`
+    let baseUrl = appHost.onePath ||  `${appHost.protocol}://${host}:${port}`
+    return `${baseUrl}/${filePath}`
 }
 
-const saveUpolaodFileDisk = async (fileName, base64Data) => {
+const saveUploadFileDisk = async (fileName, base64Data, userId, type) => {
     /**
      * writeFile : saves buffer data to file
      * @param {string} fileName: file name of the file
@@ -69,7 +72,7 @@ const saveUpolaodFileDisk = async (fileName, base64Data) => {
      */
     //create file path
     try {
-    let picPath  = await createFilePath(fileName)
+    let picPath  = await createFilePath(fileName, userId, type)
     if(!picPath)
         return null
     //check if file with the same file name exist
@@ -84,4 +87,4 @@ const saveUpolaodFileDisk = async (fileName, base64Data) => {
     }
 }
 
-export { createFilePath, generateFileUrl, getFileNameFromTitle, saveUpolaodFileDisk }
+export { createFilePath, generateFileUrl, getFileNameFromTitle, saveUploadFileDisk }
