@@ -59,8 +59,6 @@ describe("test codes for user registration", () => {
       .send(data)
       .set("Accept", "application/json")
       .set("content-type", "application/json");
-      console.log(response.body)
-
     assert.equal(response.status, 200)
     assert.isDefined(response.body.user)
     assert.isDefined(response.body.token)
