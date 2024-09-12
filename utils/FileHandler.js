@@ -2,6 +2,7 @@
 import config from "config"
 import { mkdir, readFile, writeFile } from "fs"
 import path, { basename } from "path"
+import { v4 } from "uuid";
 import { promisify } from "util"
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
@@ -16,18 +17,22 @@ const createFilePath = async (picName, userId, type) => {
     //get absolute path of current directory calling the function
     let abs = path.resolve(".")
     //find type
+    let baseFolder = ""
     if(type === "vId")
         baseFolder = "vendors-identity";
+    else if(type === "item")
+        baseFolder = "store-items"
     //join paths to get parent directory of files
-    let relativePath = path.join("public", basename,  userId)
+    let relativePath = path.join("public", baseFolder,  userId)
     let fullPath = path.join(abs, relativePath)
     //create folder on a disk
     try {
         let response = await mkdirAsync(fullPath, {recursive:true})
         //join created folder with fileName to create folder parent path
-        let filePath = path.join(fullPath, picName)
-        let ulrPath = path.join(relativePath, picName)
-        return {filePath, ulrPath}
+        let fileName = `${v4()}${path.extname(picName)}`
+        let filePath = path.join(fullPath, fileName)
+        let ulrPath = path.join(relativePath, fileName)
+        return {filePath, urlPath:ulrPath}
     } catch(err) {
         console.log(err)
         return null

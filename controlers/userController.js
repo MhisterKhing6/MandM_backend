@@ -33,8 +33,9 @@ class UserController {
     try {
       //check a user with the same phone number is registered
       let savedUser = await UserModel.findOne({
-        phoneNumber: regDetails.phoneNumber,
+        email: regDetails.email,
       });
+
       if (savedUser)
         return res.status(400).json({ message: "user is already registered" });
       let user = new UserModel({
