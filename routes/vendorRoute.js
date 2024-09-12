@@ -35,8 +35,33 @@ vendorRouter.post("/add-store-info",  VendorController.addStore)
 vendorRouter.post("/store-verification", VendorController.storeOwnerIdentityVerification)
 
 /**
- * adding store information
+ * uploading store item
  */
 vendorRouter.post("/item",  VendorController.uploadItem)
+
+/**
+ * editing uploaded  item
+ */
+vendorRouter.put("/item",  VendorController.editItem)
+
+/**
+ * deleting item
+ */
+vendorRouter.delete("/item/:itemId",  VendorController.deleteItem)
+
+/**
+ * toggle item
+ */
+vendorRouter.post("/toggle-item",  VendorController.toggleItem)
+
+/**
+ * toggle size
+ */
+vendorRouter.post("/toggle-item-size",  VendorController.toggleItemSize)
+
+/**
+ * toggle size
+ */
+vendorRouter.delete("/item-size/:sizeId",  VendorController.deleteItemSize)
 
 export {vendorRouter}

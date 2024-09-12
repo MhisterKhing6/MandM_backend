@@ -1,11 +1,12 @@
 /*Handles file operation for admin*/
 import config from "config"
-import { mkdir, readFile, writeFile } from "fs"
+import { mkdir, readFile, writeFile, rm } from "fs"
 import path, { basename } from "path"
 import { v4 } from "uuid";
 import { promisify } from "util"
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
+const rmAsync = promisify(rm)
 const mkdirAsync = promisify(mkdir)
 
 const createFilePath = async (picName, userId, type) => {
@@ -92,4 +93,8 @@ const saveUploadFileDisk = async (fileName, base64Data, userId, type) => {
     }
 }
 
-export { createFilePath, generateFileUrl, getFileNameFromTitle, saveUploadFileDisk }
+const deleteFolder = async (path) => {
+    await rmAsync(path, {recursive:true, force:true})
+}
+
+export {deleteFolder, createFilePath, generateFileUrl, getFileNameFromTitle, saveUploadFileDisk }
