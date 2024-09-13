@@ -4,7 +4,7 @@ import { ItemSizesModel } from "../models/itemSizes.js";
 import { StoreModel } from "../models/stores.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import { deleteFolder, generateFileUrl, saveUploadFileDisk } from "../utils/FileHandler.js";
-
+import path from "path"
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -17,9 +17,9 @@ class VendorController {
     if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
       return res.status(401).json({ message: "vendor identity not verified" });
     //check if user has store already
-    let storeSaved = await StoreModel.findOne({userId: req.user._id})
-    if(storeSaved)
-      return res.status(400).json({message: "user has store saved already, vendors can only have one store"})
+    let storeSaved = await StoreModel.findOne({ userId: req.user._id })
+    if (storeSaved)
+      return res.status(400).json({ message: "user has store saved already, vendors can only have one store" })
     let store = req.body;
     if (
       !(
@@ -169,13 +169,13 @@ class VendorController {
         return res.status(401).json({ message: "vendor identity not verified" });
 
       let store = await StoreModel.findOne({ userId: req.user._id })
-  
+
       if (!store)
         return res.status(400).json({ message: "user doesn't have a store" });
       //check if item exist
       let item = await ItemModel.findById(itemDetails.itemId)
       if (!item)
-        return res.status(400).json({ message: "item not found, check item id"})
+        return res.status(400).json({ message: "item not found, check item id" })
       //check to see if item belongs to user store
       if (item.storeId.toString() !== store._id.toString())
         return res.status(401).json({ "message": "item doesn't belong to user store" })
@@ -245,14 +245,14 @@ class VendorController {
     try {
       let item = await ItemModel.findById(details.itemId)
       if (!item)
-        return res.status(400).json({ "message": "wrong item id" })
+        return res.status(400).json({ "message": "wrong item id, not item found" })
       //check if item belongs to user store
       let store = await StoreModel.findOne({ userId: req.user._id })
-      if (store._id !== item.storeId)
-        return res.status(401).json({ "message": "item doesn't belong to user" })
-      item.enable = details.status === "enable"
+      if (store._id.toString() !== item.storeId.toString())
+        return res.status(401).json({ "message": "item doesn't belong to user's store" })
+      item.enable = details.status === "enable" 
       await item.save()
-      return res.status(200).json({ "message": "item successfully changed", item })
+      return res.status(200).json({ "message": "item visibility changed", item })
     } catch (err) {
       console.log(err)
       return res.status(500).json({ "message": "internal error" })
@@ -272,11 +272,11 @@ class VendorController {
       //check if item belongs to user store
       let store = await StoreModel.findOne({ userId: req.user._id })
       let item = await ItemModel.findById(size.itemId)
-      if (store._id !== item.storeId)
-        return res.status(401).json({ "message": "item doesn't belong to user" })
+      if (store._id.toString() !== item.storeId.toString())
+        return res.status(401).json({ "message": "item doesn't belong to user's store" })
       size.enable = details.status === "enable"
       await size.save()
-      return res.status(200).json({ "message": "item successfully changed", size })
+      return res.status(200).json({ "message": "size visibility changed", size })
     } catch (err) {
       console.log(err)
       return res.status(500).json({ "message": "internal error" })
@@ -287,27 +287,28 @@ class VendorController {
     //ensure item id is given
     //use item id to delete item
     //check if user is verified
-    let storeOwnerIdentity = await VerifyIdentityModel.findOne({
-      userId: req.user._id,
-    });
-    if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-      return res.status(401).json({ message: "vendor identity not verified" });
-
-    let store = await StoreModel.findOne({ userId: req.user._id })
-    if (!store)
-      return res.status(400).json({ message: "user doesn't have a store" });
-    
-    let itemId = req.params.itemId
-
-    let item = await ItemModel.findById(itemId)
-    if(!item)
-      return res.status(400).json({message:"no item entry found"})
-    if(item.storeId !== store._id)
-      return res.status(401).json({message: "item doesn't belong to user's store"})
     try {
-      await Promise.all([ItemModel.deleteOne({_id:itemId}),ItemImageModel.deleteMany({itemId})], ItemSizesModel.deleteMany({itemId}))
+      let storeOwnerIdentity = await VerifyIdentityModel.findOne({
+        userId: req.user._id,
+      });
+      if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
+        return res.status(401).json({ message: "vendor identity not verified" });
+
+      let store = await StoreModel.findOne({ userId: req.user._id })
+      if (!store)
+        return res.status(400).json({ message: "user doesn't have a store" });
+
+      let itemId = req.params.itemId
+
+      let item = await ItemModel.findById(itemId)
+      if (!item)
+        return res.status(400).json({ message: "no item entry found, check item id" })
+      if (item.storeId.toString() !== store._id.toString())
+        return res.status(401).json({ message: "item doesn't belong to user's store" })
+
+      await Promise.all([ItemModel.deleteOne({ _id: itemId }), ItemImageModel.deleteMany({ itemId })], ItemSizesModel.deleteMany({ itemId }))
       deleteFolder(path.join(path.resolve("."), "public", "store-items", (req.user._id.toString() + itemId)))
-      return res.status(200).json({ "message": "item deleted"})
+      return res.status(200).json({ "message": "item deleted" })
     } catch (err) {
       console.log(err)
       return res.status(500).json({ "message": "internal error" })
@@ -327,30 +328,30 @@ class VendorController {
     let store = await StoreModel.findOne({ userId: req.user._id })
     if (!store)
       return res.status(400).json({ message: "user doesn't have a store" });
-    
+
     let sizeId = req.params.sizeId
     let itemSize = await ItemSizesModel.findById(sizeId)
 
-    if(!itemSize)
-      return res.status(400).json({message:"wrong size id, no size  entry found"})
+    if (!itemSize)
+      return res.status(400).json({ message: "wrong size id, no size  entry found" })
     let item = await ItemModel.findById(itemSize.itemId)
-    if(item.storeId !== store._id)
-      return res.status(401).json({message: "item doesn't belong to user's store"})
+    if (item.storeId.toString() !== store._id.toString())
+      return res.status(401).json({ message: "item doesn't belong to user's store" })
     try {
-      await ItemSizesModel.deleteOne({_id:sizeId})
-      return res.status(200).json({ "message": "size deleted"})
+      await ItemSizesModel.deleteOne({ _id: sizeId })
+      return res.status(200).json({ "message": "size deleted" })
     } catch (err) {
       console.log(err)
       return res.status(500).json({ "message": "internal error" })
     }
   }
 
-  static getStoreItems  = async (req, res) => {
+  static getStoreItems = async (req, res) => {
     let limit = req.params.limit
     let page = req.params.page
-    if(page < 0)
-        page = 1
-    let offset = (page-1) * limit
+    if (page < 0)
+      page = 1
+    let offset = (page - 1) * limit
 
 
   }
