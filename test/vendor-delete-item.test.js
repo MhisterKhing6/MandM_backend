@@ -46,8 +46,6 @@ describe("test codes for vendor functions", () => {
     let user3Store = {}
 
     let user3Item = {
-        "categoryId": "9888888",
-        "subCategoryId": "2222222",
         "name": "Google Pixel 9 pro",
         "description": "Google phone running android 18 with 8 gig ram, 2023 model",
         "year": "2022"
@@ -90,6 +88,8 @@ describe("test codes for vendor functions", () => {
         user3.db = user3Login.body.user;
         await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
         user3Store.db = await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+        user3Item.categoryId = user._id;
+        user3Item.subCategoryId = user._id
         user3Item.db = await new ItemModel({ storeId: user3Store.db._id, ...user3Item }).save()
 
     });
@@ -159,7 +159,6 @@ describe("test codes for vendor functions", () => {
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)
             .set("content-type", "application/json");
-        console.log(response.body)
         assert.equal(response.status, 400);
         assert.equal(response.body.message, "no item entry found, check item id")
     });

@@ -12,7 +12,7 @@ import { StoreModel } from "../models/stores.js";
 import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
-const url = "/vendor/item";
+const url = "/vendor/store-items/1/30";
 
 describe("test codes for vendor functions", () => {
   let user = "";
@@ -59,7 +59,7 @@ describe("test codes for vendor functions", () => {
   it("should return status 400 with no authorization token given", async () => {
     let data = { name: "kingsley" };
     let response = await request(app)
-      .post(url)
+      .get(url)
       .send(data)
       .set("Accept", "application/json")
       .set("content-type", "application/json");
@@ -77,7 +77,7 @@ describe("test codes for vendor functions", () => {
       phoneNumber: "875552214",
     };
     let response = await request(app)
-      .post(url)
+      .get(url)
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token1}s`)
@@ -95,7 +95,7 @@ describe("test codes for vendor functions", () => {
       phoneNumber: "8758552214",
     };
     let response = await request(app)
-      .post(url)
+      .get(url)
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token1}`)
@@ -104,14 +104,14 @@ describe("test codes for vendor functions", () => {
     assert.equal(response.body.message, "user not authorized");
   });
 
-  it("should return status of 400, with no store information added", async () => {
+  it("should return status of 400, with vendor identity not verified", async () => {
     let data = {
       "name": "Google Pixel 9 pro",
       "description": "Google phone running android 18 with 8 gig ram, 2023 model",
       "year":"2022"
     };
     let response = await request(app)
-      .post(url)
+      .get(url)
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
@@ -121,23 +121,7 @@ describe("test codes for vendor functions", () => {
   });
 
 
-  it("should return status of 400, with not all fields given", async () => {
-    let data = {
-      storeName: "Kwame Anan",
-      latitude: "987752111",
-      longitude: "98838883",
-    };
-    let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
-    await identity.save()
-    let response = await request(app)
-      .post(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token2}`)
-      .set("content-type", "application/json");
-    assert.equal(response.status, 400);
-    assert.equal(response.body.message, "not all fields given");
-  });
+  
 
   it("should return status of 400, with not all fields given", async () => {
     let data = {
@@ -156,13 +140,13 @@ describe("test codes for vendor functions", () => {
     let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
     await identity.save()
     let response = await request(app)
-      .post(url)
+      .get(url)
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
     assert.equal(response.status, 400);
-    assert.equal(response.body.message, "no store information added");
+    assert.equal(response.body.message, "user doesn't have a store");
   });
 
   it("should return status of 200", async () => {
@@ -182,12 +166,59 @@ describe("test codes for vendor functions", () => {
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
     await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
     let response = await request(app)
-      .post(url)
+      .post("/vendor/item")
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
+
+      let response3 = await request(app)
+      .get(url)
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${token2}`)
+      .set("content-type", "application/json");
     assert.equal(response.status, 200);
+    assert.isDefined(response3.body.items)
+    assert.isArray(response3.body.items)
+    assert.isDefined(response3.body.page)
+    assert.isDefined(response3.body.count)
+    assert.equal(response3.body.items.length, 1)
+  });
+
+  it("should return status of 200, with body having items, count, page, limit", async () => {
+    let data = {
+        "categoryId": user._id.toString(),
+        "subCategoryId": user._id.toString(),
+        "name": "Google Pixel 8 pro",
+        "description": "Google phone running android 18 with 8 gig ram, 2023 model",
+        "year":"2022",
+        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
+        "sizes": [
+            {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
+            {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
+            {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
+        ]
+      };
+    await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
+    await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let response = await request(app)
+      .post("/vendor/item")
+      .send(data)
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${token2}`)
+      .set("content-type", "application/json");
+      let response3 = await request(app)
+      .get("/vendor/store-items/2/30")
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${token2}`)
+      .set("content-type", "application/json");
+    console.log(response3.body)
+    assert.equal(response.status, 200);
+    assert.isDefined(response3.body.items)
+    assert.isArray(response3.body.items)
+    assert.isDefined(response3.body.page)
+    assert.isDefined(response3.body.count)
+    assert.equal(response3.body.items.length, 0)
   });
 
 });

@@ -92,6 +92,8 @@ describe("test codes for vendor functions", () => {
         user3.db = user3Login.body.user;
         await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
         user3Store.db = await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+        user3Item.categoryId = user._id;
+        user3Item.subCategoryId = user._id
         user3Item.db = await new ItemModel({ storeId: user3Store.db._id, ...user3Item }).save()
         itemSize.db = await new ItemSizesModel({ itemId: user3Item.db._id, ...itemSize }).save()
     });
@@ -161,7 +163,6 @@ describe("test codes for vendor functions", () => {
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)
             .set("content-type", "application/json");
-        console.log(response.body)
         assert.equal(response.status, 400);
         assert.equal(response.body.message, "wrong size id, no size  entry found")
     });
