@@ -10,7 +10,8 @@ const UserSchema = new Schema({
       enum: ['customer', 'vendor', 'dispatcher', 'admin'],
       required: true
     },
-    created_at: { type: Date, default: Date.now }
+    created_at: { type: Date, default: Date.now },
+
   });
 
 //create a model

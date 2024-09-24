@@ -7,7 +7,7 @@ const subCategories = new Schema({
     enable: {type:Boolean, default:true}
   });
 
-  let categoriesModel = model("SubCategories", categoriesModel)
+  let subCategoriesModel = model("SubCategories", subCategories)
   
-  export {categoriesModel}
+  export {subCategoriesModel}
   

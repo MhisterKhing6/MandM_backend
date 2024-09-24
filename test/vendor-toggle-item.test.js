@@ -97,7 +97,7 @@ describe("test codes for vendor functions", () => {
     });
     it("should return status 400 with no authorization token given", async () => {
         let response = await request(app)
-            .post(url)
+            .put(url)
             .set("Accept", "application/json")
             .set("content-type", "application/json");
         assert.equal(response.status, 401);
@@ -107,7 +107,7 @@ describe("test codes for vendor functions", () => {
     //testing normal registration
     it("should return 400, with wrong token", async () => {
         let response = await request(app)
-            .post(url)
+            .put(url)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token1}s`)
             .set("content-type", "application/json");
@@ -117,7 +117,7 @@ describe("test codes for vendor functions", () => {
 
     it("should return status of 401, with wrong user not authorized", async () => {
         let response = await request(app)
-            .post(url)
+            .put(url)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token1}`)
             .set("content-type", "application/json");
@@ -136,7 +136,7 @@ describe("test codes for vendor functions", () => {
                 itemId: user._id
         }
         let response = await request(app)
-            .post(url)
+            .put(url)
             .send(data)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)
@@ -154,7 +154,7 @@ describe("test codes for vendor functions", () => {
                 status:"disable"
         }
         let response = await request(app)
-            .post(url)
+            .put(url)
             .send(data)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)
@@ -168,7 +168,7 @@ describe("test codes for vendor functions", () => {
         await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
         let data = {itemId: user3Item.db._id, status:"enable"}
         let response = await request(app)
-            .post(url)
+            .put(url)
             .send(data)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token2}`)
@@ -180,7 +180,7 @@ describe("test codes for vendor functions", () => {
     it("should return status of 200, item visibility changed", async () => {
         let data = {itemId: user3Item.db._id, status:"disable"}
         let response = await request(app)
-            .post(url)
+            .put(url)
             .send(data)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)

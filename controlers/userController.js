@@ -11,6 +11,7 @@ import {
 import { VerifyTokenModel } from "../models/verifyToken.js";
 import sha1 from "sha1";
 import { generateToken } from "../utils/WebTokenController.js";
+import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 class UserController {
   //register user functions
   static register = async (req, res) => {
@@ -221,6 +222,11 @@ class UserController {
       return res.status(400).json({ message: "wrong user password" });
     //generate user token
     let token = generateToken(user);
+    let verified = await VerifyIdentityModel.findOne({userId:user._id}).lean()
+    if(verified && verified.status === "verified")
+        user.verified === true
+    else 
+        user.verified === false
     return res.status(200).json({ user, token });
   };
 }

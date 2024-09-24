@@ -12,7 +12,7 @@ import { StoreModel } from "../models/stores.js";
 import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
-const url = "/vendor/store-items/1/30";
+const url = "/vendor/store-items?page=1&&limit=30";
 
 describe("test codes for vendor functions", () => {
   let user = "";
@@ -208,7 +208,7 @@ describe("test codes for vendor functions", () => {
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
       let response3 = await request(app)
-      .get("/vendor/store-items/2/30")
+      .get("/vendor/store-items?page=2&&limit=30")
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");

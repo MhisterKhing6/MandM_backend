@@ -3,6 +3,7 @@ import { connectDb } from "./utils/MongodbConnector.js"
 import { authenticationRouter } from "./routes/authRoute.js"
 import cors from "cors"
 import { vendorRouter } from "./routes/vendorRoute.js"
+import { adminRouter } from "./routes/adminRoute.js"
 
 const app = express()
 
@@ -14,6 +15,8 @@ app.use(express.json({limit:"100mb"}))
 app.use("/api", authenticationRouter)
 
 app.use("/vendor", vendorRouter)
+
+app.use("/admin", adminRouter)
 
 
 

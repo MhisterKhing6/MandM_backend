@@ -52,16 +52,21 @@ vendorRouter.delete("/item/:itemId",  VendorController.deleteItem)
 /**
  * toggle item
  */
-vendorRouter.post("/toggle-item",  VendorController.toggleItem)
+vendorRouter.put("/toggle-item",  VendorController.toggleItem)
 
 /**
  * toggle size
  */
-vendorRouter.post("/toggle-item-size",  VendorController.toggleItemSize)
+vendorRouter.put("/toggle-item-size",  VendorController.toggleItemSize)
 
 /**
  * toggle size
  */
 vendorRouter.delete("/item-size/:sizeId",  VendorController.deleteItemSize)
+
+/**
+ * get items
+ */
+vendorRouter.get("/store-items",  VendorController.getStoreItems)
 
 export {vendorRouter}

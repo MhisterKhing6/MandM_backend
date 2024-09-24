@@ -121,14 +121,16 @@ class VendorController {
       if (savedItem)
         return res.status(400).json({ "message": "item already saved" })
       //item object
-      let itemObject = new ItemModel({ ...item, images: null, storeId: store._id })
+      let itemObject = new ItemModel({ ...item, images:[], storeId: store._id })
       //process sizes
       let sizesModel = []
       /*
       {name:"64gig", price:"30cedis", quantity: "800"}
       */
       for (const size of item.sizes) {
-        sizesModel.push(new ItemSizesModel({ ...size, itemId: itemObject._id }))
+        let sizeObj = new ItemSizesModel({ ...size, itemId: itemObject._id })
+        itemObject.itemSizes.push(sizeObj)
+        sizesModel.push(sizeObj.save())
       }
       //process images
       let imagesPromise = []
@@ -139,9 +141,12 @@ class VendorController {
       }
       let imagesSaved = await Promise.all(imagesPromise)
       let imagesModel = []
-      for (const image of imagesSaved)
-        imagesModel.push(new ItemImageModel({ itemId: itemObject._id, url: generateFileUrl(image.urlPath), diskPath: image.filePath }).save())
-      //save items and images
+      for (const image of imagesSaved){
+        let imageObj = new ItemImageModel({ itemId: itemObject._id, url: generateFileUrl(image.urlPath), diskPath: image.filePath })
+        itemObject.images.push(imageObj)
+        imagesModel.push(imageObj.save())
+      }
+        //save items and images
       if (item.colors)
         itemObject.colors = item.join(",")
       await Promise.all([itemObject.save(), ...imagesModel, ...sizesModel])
@@ -306,7 +311,7 @@ class VendorController {
       if (item.storeId.toString() !== store._id.toString())
         return res.status(401).json({ message: "item doesn't belong to user's store" })
 
-      await Promise.all([ItemModel.deleteOne({ _id: itemId }), ItemImageModel.deleteMany({ itemId })], ItemSizesModel.deleteMany({ itemId }))
+      await Promise.all([ItemModel.deleteOne({ _id: itemId }), ItemImageModel.deleteMany({ itemId }), ItemSizesModel.deleteMany({ itemId })])
       deleteFolder(path.join(path.resolve("."), "public", "store-items", (req.user._id.toString() + itemId)))
       return res.status(200).json({ "message": "item deleted" })
     } catch (err) {
@@ -347,16 +352,24 @@ class VendorController {
   }
 
   static getStoreItems = async (req, res) => {
-    let limit = req.params.limit
-    let page = req.params.page
+    let limit = req.query.limit ? req.query.limit : 30
+    let page = req.query.page ? req.query.page : 1
     if (page < 0)
       page = 1
     let offset = (page - 1) * limit
+    let storeOwnerIdentity = await VerifyIdentityModel.findOne({
+      userId: req.user._id,
+    });
+    if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
+      return res.status(401).json({ message: "vendor identity not verified" });
 
+    let store = await StoreModel.findOne({ userId: req.user._id })
+    if (!store)
+      return res.status(400).json({ message: "user doesn't have a store" });
 
+    let count = await ItemModel.countDocuments({storeId:store._id})
+    let userItems =  await ItemModel.find({storeId:store._id}).skip(offset).limit(limit).populate("images", "url").populate("itemSizes", "-__v").populate("categoryId", "-__v").populate("subCategoryId", "-__v").lean()
+    return res.status(200).json({limit, page, count, items:userItems})
   }
-
-
-
 }
 export { VendorController };
