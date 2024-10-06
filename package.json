@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "pkill -sigkill node && mocha  --timeout 50000 --exit",
+    "test": "mocha  --timeout 50000 --exit ",
     "dev": "nodemon index.js"
   },
   "author": "",

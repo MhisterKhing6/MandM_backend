@@ -14,6 +14,7 @@ import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
 import { deleteFolder } from "../utils/FileHandler.js";
 import path from "path";
+import { CategoriesModel } from "../models/categories.js";
 const url = "/vendor/toggle-item-size";
 
 describe("test codes for vendor functions", () => {
@@ -57,6 +58,7 @@ describe("test codes for vendor functions", () => {
 
     let token1 = generateToken(user1);
     let token2 = "";
+    let category = {name:"Food"}
     after(async () => {
         await UserModel.deleteMany({});
         await VerifyIdentityModel.deleteMany({})
@@ -90,8 +92,9 @@ describe("test codes for vendor functions", () => {
             .set("content-type", "application/json");
         token3 = user3Login.body.token;
         user3.db = user3Login.body.user;
+        category = await new CategoriesModel(category).save()
         await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
-        user3Store.db = await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+        user3Store.db = await new StoreModel({type: category._id ,storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
         user3Item.categoryId = user._id;
         user3Item.subCategoryId = user._id
         user3Item.db = await new ItemModel({ storeId: user3Store.db._id, ...user3Item }).save()
@@ -133,7 +136,6 @@ describe("test codes for vendor functions", () => {
     it("should return status of 400, with not all fields given", async () => {
 
         await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
-        await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
         let data ={
                 
         }
@@ -150,10 +152,11 @@ describe("test codes for vendor functions", () => {
     it("should return status of 400, wrong item id, not item found", async () => {
 
         await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
-        await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
+        //await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
         let data ={
                 sizeId: user._id,
-                status:"disable"
+                status:"disable",
+                storeId:user3Store.db._id
         }
         let response = await request(app)
             .put(url)
@@ -167,8 +170,8 @@ describe("test codes for vendor functions", () => {
 
     it("should return status of 401, with item doesn't belong store", async () => {
         await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
-        await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
-        let data = {sizeId: itemSize.db._id, status:"enable"}
+        let user2Store = await new StoreModel({type:category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
+        let data = {sizeId: itemSize.db._id, status:"enable", storeId:user2Store._id}
         let response = await request(app)
             .put(url)
             .send(data)
@@ -180,7 +183,7 @@ describe("test codes for vendor functions", () => {
     });
 
     it("should return status of 200, item visibility changed", async () => {
-        let data = {sizeId: itemSize.db._id, status:"disable"}
+        let data = {storeId: user3Store.db._id, sizeId: itemSize.db._id, status:"disable"}
         let response = await request(app)
             .put(url)
             .send(data)

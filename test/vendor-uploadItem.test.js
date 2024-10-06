@@ -12,6 +12,7 @@ import { StoreModel } from "../models/stores.js";
 import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
+import { CategoriesModel } from "../models/categories.js";
 const url = "/vendor/item";
 
 describe("test codes for vendor functions", () => {
@@ -30,6 +31,7 @@ describe("test codes for vendor functions", () => {
     password: sha1("987321"),
     phoneNumber: "8758552214",
   };
+  
 
   let token1 = generateToken(user1);
   let token2 = "";
@@ -39,6 +41,7 @@ describe("test codes for vendor functions", () => {
     await ItemImageModel.deleteMany({})
     await ItemModel.deleteMany({})
     await ItemSizesModel.deleteMany({})
+    await CategoriesModel.deleteMany({})
   });
   before(async () => {
     await UserModel.deleteMany({});
@@ -141,11 +144,12 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 400, with not all fields given", async () => {
     let data = {
+        "storeId": user._id.toString(),
         "categoryId": "9888888",
         "subCategoryId": "2222222",
         "name": "Google Pixel 9 pro",
+        "attributes": {color:["yellow", "pink", "brown"]},
         "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-        "year":"2022",
         "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
         "sizes": [
             {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
@@ -164,14 +168,18 @@ describe("test codes for vendor functions", () => {
     assert.equal(response.status, 400);
     assert.equal(response.body.message, "no store information added");
   });
-
+  //phones
   it("should return status of 200", async () => {
+    await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
+    let category = await new CategoriesModel({name: "electronics"}).save()
+    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
     let data = {
         "categoryId": user._id.toString(),
         "subCategoryId": user._id.toString(),
         "name": "Google Pixel 9 pro",
+        "storeId": store._id,
         "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-        "year":"2022",
+        "attributes": {"year":2022, colors:["brown", "yellow", "pink"]},
         "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
         "sizes": [
             {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
@@ -179,8 +187,32 @@ describe("test codes for vendor functions", () => {
             {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
         ]
       };
+    let response = await request(app)
+      .post(url)
+      .send(data)
+      .set("Accept", "application/json")
+      .set("Authorization", `Bearer ${token2}`)
+      .set("content-type", "application/json");
+    assert.equal(response.status, 200);
+  });
+
+   //food
+   it("should return status of 200", async () => {
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let category = await new CategoriesModel({name: "electronics"}).save()
+    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let data = {
+        "categoryId": user._id.toString(),
+        "subCategoryId": user._id.toString(),
+        "name": "Waakye",
+        "storeId": store._id,
+        "description": "Waakye with fifuslklsjflsjflsjflsjflsjflsjflsjfls",
+        "attributes": {toppings:{makroni:20, beans:55, fish:30}},
+        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
+        "sizes": [
+            {"name": "medium",description:"waakye na makksoslf", price:566}
+          ]
+      };
     let response = await request(app)
       .post(url)
       .send(data)

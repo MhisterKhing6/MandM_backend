@@ -12,9 +12,11 @@ import { StoreModel } from "../models/stores.js";
 import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
-const url = "/vendor/store-items?page=1&&limit=30";
+import { CategoriesModel } from "../models/categories.js";
+
 
 describe("test codes for vendor functions", () => {
+  let url = "/vendor/store-items/8357385837583583";
   let user = "";
   let user1 = {
     role: "customer",
@@ -33,6 +35,7 @@ describe("test codes for vendor functions", () => {
 
   let token1 = generateToken(user1);
   let token2 = "";
+  let category = {name:"Food"}
   after(async () => {
     await UserModel.deleteMany({});
     await VerifyIdentityModel.deleteMany({})
@@ -54,6 +57,7 @@ describe("test codes for vendor functions", () => {
       .set("content-type", "application/json");
     token2 = response.body.token;
     user = response.body.user;
+    category = await new CategoriesModel(category).save()
 
   });
   it("should return status 400 with no authorization token given", async () => {
@@ -105,14 +109,9 @@ describe("test codes for vendor functions", () => {
   });
 
   it("should return status of 400, with vendor identity not verified", async () => {
-    let data = {
-      "name": "Google Pixel 9 pro",
-      "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-      "year":"2022"
-    };
+    
     let response = await request(app)
       .get(url)
-      .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
@@ -123,7 +122,7 @@ describe("test codes for vendor functions", () => {
 
   
 
-  it("should return status of 400, with not all fields given", async () => {
+  it("should return status of 400, no store entry found", async () => {
     let data = {
         "categoryId": "9888888",
         "subCategoryId": "2222222",
@@ -137,8 +136,8 @@ describe("test codes for vendor functions", () => {
             {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
         ]
       };
-    let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
-    await identity.save()
+    let identity = await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
+    let url = `/vendor/store-items/${identity._id}`
     let response = await request(app)
       .get(url)
       .send(data)
@@ -146,32 +145,34 @@ describe("test codes for vendor functions", () => {
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
     assert.equal(response.status, 400);
-    assert.equal(response.body.message, "user doesn't have a store");
+    assert.equal(response.body.message, "no store entry found");
   });
 
   it("should return status of 200", async () => {
-    let data = {
-        "categoryId": user._id.toString(),
-        "subCategoryId": user._id.toString(),
-        "name": "Google Pixel 9 pro",
-        "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-        "year":"2022",
-        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
-        "sizes": [
-            {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
-        ]
-      };
+
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let data = {
+      "categoryId": user._id.toString(),
+      "subCategoryId": user._id.toString(),
+      "name": "Google Pixel 9 pro",
+      "description": "Google phone running android 18 with 8 gig ram, 2023 model",
+      "year":"2022",
+      "storeId": store._id,
+      "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
+      "sizes": [
+          {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
+          {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
+          {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
+      ]
+    };
     let response = await request(app)
       .post("/vendor/item")
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
-
+      let url = `/vendor/store-items/${store._id}?page=1&&limit=30`
       let response3 = await request(app)
       .get(url)
       .set("Accept", "application/json")
@@ -186,21 +187,22 @@ describe("test codes for vendor functions", () => {
   });
 
   it("should return status of 200, with body having items, count, page, limit", async () => {
-    let data = {
-        "categoryId": user._id.toString(),
-        "subCategoryId": user._id.toString(),
-        "name": "Google Pixel 8 pro",
-        "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-        "year":"2022",
-        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
-        "sizes": [
-            {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
-        ]
-      };
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let data = {
+      "categoryId": user._id.toString(),
+      "subCategoryId": user._id.toString(),
+      "name": "Google Pixel 9 pro",
+      "description": "Google phone running android 18 with 8 gig ram, 2023 model",
+      "year":"2022",
+      "storeId": store._id,
+      "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
+      "sizes": [
+          {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
+          {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
+          {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
+      ]
+    };
     let response = await request(app)
       .post("/vendor/item")
       .send(data)
@@ -208,11 +210,10 @@ describe("test codes for vendor functions", () => {
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
       let response3 = await request(app)
-      .get("/vendor/store-items?page=2&&limit=30")
+      .get(`/vendor/store-items/${store._id}?page=2&&limit=30`)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
-    console.log(response3.body)
     assert.equal(response.status, 200);
     assert.isDefined(response3.body.items)
     assert.isArray(response3.body.items)

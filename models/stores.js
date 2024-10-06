@@ -8,6 +8,7 @@ const Store = new Schema({
     latitude: { type: String },
     longitude: { type: String },
     createdAt: { type: Date, default: Date.now },
+    type: { type: Schema.Types.ObjectId, ref: 'Categories', required: true }
   });
   
 let  StoreModel = model('Store', Store);

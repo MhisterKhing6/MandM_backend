@@ -14,6 +14,7 @@ import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
 import { deleteFolder } from "../utils/FileHandler.js";
 import path from "path";
+import { CategoriesModel } from "../models/categories.js";
 const url = "/vendor/item";
 
 describe("test codes for vendor functions", () => {
@@ -42,15 +43,15 @@ describe("test codes for vendor functions", () => {
   };
 
   let token3 = ""
-
+  let category = { name: "clothes" }
   let user3Store = {}
-
+  let user2Store = { latitude: "8555", longitude: "88888", }
   let user3Item = {
     "categoryId": "9888888",
     "subCategoryId": "2222222",
     "name": "Google Pixel 9 pro",
     "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-    "year":"2022"
+    "year": "2022"
   };
 
   let token1 = generateToken(user1);
@@ -88,11 +89,14 @@ describe("test codes for vendor functions", () => {
       .set("content-type", "application/json");
     token3 = user3Login.body.token;
     user3.db = user3Login.body.user;
-    await new VerifyIdentityModel({userId:user3.db._id, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save()
-    user3Store.db = await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user3.db._id, latitude:"23333333", "longitude":"33333333"}).save()
+    category = await new CategoriesModel(category).save()
+    await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
+    user3Store.db = await new StoreModel({ type: category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+    user2Store.db = await new StoreModel({ storePhone: "+666666666666666", userId: user._id, type: category._id, longitude: "233333", storeName: "Afa ppp", latitude: "skslsklsls", storePhone: "klskflsfjlsf" }).save()
     user3Item.categoryId = user._id;
     user3Item.subCategoryId = user._id
-    user3Item.db =  await new ItemModel({storeId: user3Store.db._id, ...user3Item}).save()
+
+    user3Item.db = await new ItemModel({ storeId: user3Store.db._id, ...user3Item }).save()
 
   });
   it("should return status 400 with no authorization token given", async () => {
@@ -139,7 +143,8 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 400, with vendor identity not verified", async () => {
     let data = {
-      itemId:"testItemId"
+      itemId: "testItemId",
+      storeId: user._id
     };
     let response = await request(app)
       .put(url)
@@ -154,7 +159,7 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 400, with not all fields given", async () => {
     let data = {};
-    let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
+    let identity = new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" });
     await identity.save()
     let response = await request(app)
       .put(url)
@@ -169,9 +174,10 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 400, with no store information added", async () => {
     let data = {
-        itemId:"testItemId"
-      };
-    let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
+      itemId: "testItemId",
+      storeId: user._id
+    };
+    let identity = new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" });
     await identity.save()
     let response = await request(app)
       .put(url)
@@ -183,13 +189,13 @@ describe("test codes for vendor functions", () => {
     assert.equal(response.body.message, "user doesn't have a store");
   });
 
-  
+
   it("should return status of 400, with item not found, check item id", async () => {
     let data = {
-        itemId:user._id
-      };
-    await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+      itemId: user._id,
+      storeId: user3Store.db._id
+    };
+    await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
     let response = await request(app)
       .put(url)
       .send(data)
@@ -202,287 +208,300 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 401, with item doesn't belong store", async () => {
     let data = {
-        itemId:user3Item.db._id
-      };
-    await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    await new StoreModel({storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+      itemId: user3Item.db._id,
+      storeId: user2Store.db._id
+    };
+    let store = await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
     let response = await request(app)
       .put(url)
       .send(data)
       .set("Accept", "application/json")
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
+    console.log(response.body)
     assert.equal(response.status, 401);
     assert.equal(response.body.message, "item doesn't belong to user store")
   });
 
   it("should return status of 200, with item description changed to user description", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description"
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let updatedItem  = await ItemModel.findById(user3Item.db._id)
-    assert.equal(response.status, 200);
-    assert.equal(response.body.message, "item updated successfully")
-    assert.equal(updatedItem.description, data.description)
-  });
-
-  it("should return status of 200, with item description and name changed to data name and description", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test"
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let updatedItem  = await ItemModel.findById(user3Item.db._id)
-    assert.equal(response.status, 200);
-    assert.equal(response.body.message, "item updated successfully")
-    assert.equal(updatedItem.description, data.description)
-    assert.equal(updatedItem.name, data.name)
-  });
-
-  it("should return status of 400, with to add new sizes, name,price and quantity are required fields", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {action:"add", price:566, "quantity": 200},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let updatedItem  = await ItemModel.findById(user3Item.db._id).populate("itemSizes").exec()
-    let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         storeId : user3Store.db._id
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let updatedItem  = await ItemModel.findById(user3Item.db._id)
+     assert.equal(response.status, 200);
+     assert.equal(response.body.message, "item updated successfully")
+     assert.equal(updatedItem.description, data.description)
+   });
+   
+   it("should return status of 200, with item description and name changed to data name and description", async () => {
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         name: "change test",
+         storeId: user3Store.db._id
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let updatedItem  = await ItemModel.findById(user3Item.db._id)
+     assert.equal(response.status, 200);
+     assert.equal(response.body.message, "item updated successfully")
+     assert.equal(updatedItem.description, data.description)
+     assert.equal(updatedItem.name, data.name)
+   });
+   
+   it("should return status of 400, with to add new sizes, name,price and quantity are required fields", async () => {
+     let data = {
+         itemId:user3Item.db._id,
+         storeId:user3Store.db._id,
+         description:"testing description",
+         name: "change test",
+         attributes: {"year":2022},
+         sizes: [
+             {action:"add", price:566, "quantity": 200},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let updatedItem  = await ItemModel.findById(user3Item.db._id).populate("itemSizes").exec()
+     let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+     
+     assert.equal(response.status, 400);
+     assert.equal(response.body.message, "to add new sizes, name,price and quantity are required fields")
+   });
+ 
+  
+   it("should return status of 200, with item description and name changed, sizes uploaded", async () => {
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         name: "change test",
+         storeId: user3Store.db._id,
+         sizes: [
+             {action:"add", name: "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
+             {action:"add", name: "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
+             {action:"add", name: "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let updatedItem  = await ItemModel.findById(user3Item.db._id).populate("itemSizes").exec()
+     let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+     
+     assert.equal(response.status, 200);
+     assert.equal(response.body.message, "item updated successfully")
+     assert.equal(updatedItem.description, data.description)
+     assert.equal(updatedItem.name, data.name)
+     assert.equal(itemSizes.length, 3)
+   });
+ 
+  
+   it("should return status of 200, with item description and name changed to data name and description", async () => {
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         name: "change test",
+         storeId:user3Store.db._id
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     
+     let updatedItem  = await ItemModel.findById(user3Item.db._id)
+     assert.equal(response.status, 200);
+     assert.equal(response.body.message, "item updated successfully")
+     assert.equal(updatedItem.description, data.description)
+     assert.equal(updatedItem.name, data.name)
+   });
+ 
+   it("should return status of 400, with sizeId is required to delete the size", async () => {
+ 
+     let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
+     let data = {
+         itemId:user3Item.db._id,
+         storeId:user3Store.db._id,
+         description:"testing description",
+         name: "change test",
+         sizes: [
+             {action:"delete", itemId:uploadedSize._id},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     assert.equal(response.status, 400);
+     assert.equal(response.body.message, "sizeId is required to delete the size")
     
-    assert.equal(response.status, 400);
-    assert.equal(response.body.message, "to add new sizes, name,price and quantity are required fields")
-  });
-
-
-  it("should return status of 200, with item description and name changed, sizes uploaded", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {action:"add", name: "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {action:"add", name: "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {action:"add", name: "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let updatedItem  = await ItemModel.findById(user3Item.db._id).populate("itemSizes").exec()
-    let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+   });
+ 
+   //deleting size
+   it("should return status of 200, with name and description changed and size deleted", async () => {
+     await ItemSizesModel.deleteMany({})
+     let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
+     let data = {
+         itemId:user3Item.db._id,
+         storeId:user3Store.db._id,
+         description:"testing description",
+         name: "change test",
+         sizes: [
+             {action:"delete", sizeId:uploadedSize._id},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+     assert.equal(response.status, 200);
+     assert.equal(itemSizes.length, 0)
     
-    assert.equal(response.status, 200);
-    assert.equal(response.body.message, "item updated successfully")
-    assert.equal(updatedItem.description, data.description)
-    assert.equal(updatedItem.name, data.name)
-    assert.equal(itemSizes.length, 3)
-  });
-
-
-  it("should return status of 200, with item description and name changed to data name and description", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test"
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
+   });
+ 
+ 
+   it("should return status of 200, with name and description changed and size deleted", async () => {
+     await ItemSizesModel.deleteMany({})
+     let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
+     let data = {
+         itemId:user3Item.db._id,
+         storeId:user3Store.db._id,
+         description:"testing description",
+         name: "change test",
+         sizes: [
+             {action:"delete", sizeId:uploadedSize._id},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+     assert.equal(response.status, 200);
+     assert.equal(itemSizes.length, 0)
     
-    let updatedItem  = await ItemModel.findById(user3Item.db._id)
-    assert.equal(response.status, 200);
-    assert.equal(response.body.message, "item updated successfully")
-    assert.equal(updatedItem.description, data.description)
-    assert.equal(updatedItem.name, data.name)
-  });
-
-  it("should return status of 400, with sizeId is required to delete the size", async () => {
-
-    let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {action:"delete", itemId:uploadedSize._id},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    assert.equal(response.status, 400);
-    assert.equal(response.body.message, "sizeId is required to delete the size")
+   });
+ 
+   //updating quantity and price
+   it("should return status of 400, to update item size, sizeId is required", async () => {
+     await ItemSizesModel.deleteMany({})
+     let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
+     let data = {
+         itemId:user3Item.db._id,
+         storeId:user3Store.db._id,
+         description:"testing description",
+         name: "change test",
+         sizes: [
+             {},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
+     assert.equal(response.status, 400);
+     assert.equal(response.body.message, "to update item size, sizeId is required")
+    
+       
+   });
+ 
    
-  });
-
-  //deleting size
-  it("should return status of 200, with name and description changed and size deleted", async () => {
-    await ItemSizesModel.deleteMany({})
-    let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {action:"delete", sizeId:uploadedSize._id},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
-    assert.equal(response.status, 200);
-    assert.equal(itemSizes.length, 0)
+   it("should return status of 200, with name and description changed and size deleted", async () => {
+     await ItemSizesModel.deleteMany({})
+     let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         storeId:user3Store.db._id,
+         name: "change test",
+         sizes: [
+             {action:"update", sizeId:uploadedSize._id, price:800, quantity:9999},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let itemSizes  = await ItemSizesModel.findById(uploadedSize._id).lean()
+     assert.equal(response.status, 200);
+     assert.equal(itemSizes.price, data.sizes[0].price)
+     assert.equal(itemSizes.quantity, data.sizes[0].quantity)
+    
+   });
    
-  });
-
-
-  it("should return status of 200, with name and description changed and size deleted", async () => {
-    await ItemSizesModel.deleteMany({})
-    let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {action:"delete", sizeId:uploadedSize._id},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
-    assert.equal(response.status, 200);
-    assert.equal(itemSizes.length, 0)
+   //adding images
+   it("should return status of 400, image should have have a fileName and data", async () => {
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         storeId:user3Store.db._id,
+         name: "change test",
+         images: [
+             {data:`base64,${Buffer.from("test image 3").toString("base64")}`},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     assert.equal(response.status, 400);
+     assert.equal(response.body.message, "image should have have a fileName and data")
+    
+   });
+ 
    
-  });
-
-  //updating quantity and price
-  it("should return status of 400, to update item size, sizeId is required", async () => {
-    await ItemSizesModel.deleteMany({})
-    let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let itemSizes  = await ItemSizesModel.find({itemId:user3Item.db._id}).lean()
-    assert.equal(response.status, 400);
-    assert.equal(response.body.message, "to update item size, sizeId is required")
-   
-  });
-
-  
-  it("should return status of 200, with name and description changed and size deleted", async () => {
-    await ItemSizesModel.deleteMany({})
-    let uploadedSize = await new ItemSizesModel({itemId:user3Item.db._id, price:500, name:"98gig", quantity:20}).save()
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        sizes: [
-            {action:"update", sizeId:uploadedSize._id, price:800, quantity:9999},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let itemSizes  = await ItemSizesModel.findById(uploadedSize._id).lean()
-    assert.equal(response.status, 200);
-    assert.equal(itemSizes.price, data.sizes[0].price)
-    assert.equal(itemSizes.quantity, data.sizes[0].quantity)
-   
-  });
-  
-  //adding images
-  it("should return status of 400, image should have have a fileName and data", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        images: [
-            {data:`base64,${Buffer.from("test image 3").toString("base64")}`},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    assert.equal(response.status, 400);
-    assert.equal(response.body.message, "image should have have a fileName and data")
-   
-  });
-
-  
-  it("should return status of 200, with name and description changed and size deleted", async () => {
-    let data = {
-        itemId:user3Item.db._id,
-        description:"testing description",
-        name: "change test",
-        images: [
-            {data:`base64,${Buffer.from("test image 18").toString("base64")}`, fileName:"image.txt"},
-        ]
-      };
-    let response = await request(app)
-      .put(url)
-      .send(data)
-      .set("Accept", "application/json")
-      .set("Authorization", `Bearer ${token3}`)
-      .set("content-type", "application/json");
-    let itemImage  = await ItemImageModel.find({itemId:data.itemId}).lean()
-    assert.equal(response.status, 200);
-    assert.equal(itemImage.length, 1)
-  });
-  
-
+   it("should return status of 200, with name and description changed and size deleted", async () => {
+     let data = {
+         itemId:user3Item.db._id,
+         description:"testing description",
+         storeId:user3Store.db._id,
+         name: "change test",
+         images: [
+             {data:`base64,${Buffer.from("test image 18").toString("base64")}`, fileName:"image.txt"},
+         ]
+       };
+     let response = await request(app)
+       .put(url)
+       .send(data)
+       .set("Accept", "application/json")
+       .set("Authorization", `Bearer ${token3}`)
+       .set("content-type", "application/json");
+     let itemImage  = await ItemImageModel.find({itemId:data.itemId}).lean()
+     assert.equal(response.status, 200);
+     assert.equal(itemImage.length, 1)
+   });
 });

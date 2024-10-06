@@ -14,6 +14,7 @@ import { ItemModel } from "../models/items.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
 import { deleteFolder } from "../utils/FileHandler.js";
 import path from "path";
+import { CategoriesModel } from "../models/categories.js";
 const url = "/vendor/item";
 
 describe("test codes for vendor functions", () => {
@@ -32,7 +33,7 @@ describe("test codes for vendor functions", () => {
         password: sha1("987321"),
         phoneNumber: "8758552214",
     };
-
+    let user2Store = {}
     let user3 = {
         role: "vendor",
         name: "kingsley",
@@ -50,7 +51,7 @@ describe("test codes for vendor functions", () => {
         "description": "Google phone running android 18 with 8 gig ram, 2023 model",
         "year": "2022"
     };
-
+    let category = {name: "electronics"}
     let token1 = generateToken(user1);
     let token2 = "";
     after(async () => {
@@ -86,10 +87,12 @@ describe("test codes for vendor functions", () => {
             .set("content-type", "application/json");
         token3 = user3Login.body.token;
         user3.db = user3Login.body.user;
+        category = await new CategoriesModel(category).save()
         await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
-        user3Store.db = await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+        user3Store.db = await new StoreModel({type:category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
         user3Item.categoryId = user._id;
         user3Item.subCategoryId = user._id
+        user2Store.db = await new StoreModel({ storePhone: "+666666666666666", userId: user._id, type: category._id, longitude: "233333", storeName: "Afa ppp", latitude: "skslsklsls", storePhone: "klskflsfjlsf" }).save()
         user3Item.db = await new ItemModel({ storeId: user3Store.db._id, ...user3Item }).save()
 
     });
@@ -128,7 +131,7 @@ describe("test codes for vendor functions", () => {
             itemId: "testItemId"
         };
         let response = await request(app)
-            .delete(`${url}/${user3Item.db._id.toString()}`)
+            .delete(`${url}/${user3Store.db._id}/${user3Item.db._id.toString()}`)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token2}`)
             .set("content-type", "application/json");
@@ -141,7 +144,7 @@ describe("test codes for vendor functions", () => {
         let identity = new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" });
         await identity.save()
         let response = await request(app)
-            .delete(`${url}/${user3Item.db._id.toString()}`)
+            .delete(`${url}/${user3Item.db._id.toString()}/${user3Item.db._id.toString()}`)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token2}`)
             .set("content-type", "application/json");
@@ -153,9 +156,9 @@ describe("test codes for vendor functions", () => {
     it("should return status of 400, with item not found, check item id", async () => {
 
         await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
-        await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
+        await new StoreModel({type:category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
         let response = await request(app)
-            .delete(`${url}/${user._id.toString()}`)
+            .delete(`${url}/${user3Store.db._id}/${user._id.toString()}`)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)
             .set("content-type", "application/json");
@@ -165,9 +168,9 @@ describe("test codes for vendor functions", () => {
 
     it("should return status of 401, with item doesn't belong store", async () => {
         await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
-        await new StoreModel({ storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
+        await new StoreModel({type:category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
         let response = await request(app)
-            .delete(`${url}/${user3Item.db._id.toString()}`)
+            .delete(`${url}/${user2Store.db._id}/${user3Item.db._id.toString()}`)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token2}`)
             .set("content-type", "application/json");
@@ -177,7 +180,7 @@ describe("test codes for vendor functions", () => {
 
     it("should return status of 200, with item deleted message", async () => {
         let response = await request(app)
-            .delete(`${url}/${user3Item.db._id.toString()}`)
+            .delete(`${url}/${user3Store.db._id}/${user3Item.db._id.toString()}`)
             .set("Accept", "application/json")
             .set("Authorization", `Bearer ${token3}`)
             .set("content-type", "application/json");
