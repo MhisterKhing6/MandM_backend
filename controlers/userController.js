@@ -58,16 +58,14 @@ class UserController {
         message.verificationId = verificationEntry._id;
       }
       await user.save();
-      return res
-        .status(201)
-        .json({
-          ...message,
-          user: {
-            name: user.name,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-          },
-        });
+      return res.status(201).json({
+        ...message,
+        user: {
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+        },
+      });
     } catch (err) {
       console.log(err);
       return res.status(501).json({ message: "internal error" });
@@ -216,17 +214,21 @@ class UserController {
     //search for user
     let user = await UserModel.findOne(query).lean();
     if (!user)
-      return res.status(400).json({ message: "user is not registered" });
+      return res
+        .status(400)
+        .json({ message: "Invalid credentials or User is not registered" });
     //check if passwords match
     if (user.password !== sha1(loginDetails.password))
-      return res.status(400).json({ message: "wrong user password" });
+      return res
+        .status(400)
+        .json({ message: "Wrong credentials check and try again!!" });
     //generate user token
     let token = generateToken(user);
-    let verified = await VerifyIdentityModel.findOne({userId:user._id}).lean()
-    if(verified && verified.status === "verified")
-        user.verified === true
-    else 
-        user.verified === false
+    let verified = await VerifyIdentityModel.findOne({
+      userId: user._id,
+    }).lean();
+    if (verified && verified.status === "verified") user.verified === true;
+    else user.verified === false;
     return res.status(200).json({ user, token });
   };
 }

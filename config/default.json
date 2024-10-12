@@ -1,17 +1,17 @@
 {
-    "host": {
-        "onePath":"https://hallmarkcaffee.onrender.com",
-        "port": 8000,
-        "protocol": "http",
-        "ip": "localhost"
-    }, 
+  "host": {
+    "onePath": "https://hallmarkcaffee.onrender.com",
+    "port": 8000,
+    "protocol": "http",
+    "ip": "localhost"
+  },
 
-    "MONGO_URI":"mongodb://localhost:27017/mnmtest",
-    "email": {
-        "email": "autocodegrader75@gmail.com",
-        "secrete": "okuiugeaouthupzv"
-    },
-    "token": {
-        "secreteKey": "9834%si^Ko"
-    }
+  "MONGO_URI": "mongodb+srv://agyinjohn97:4Y6Hv8HmzqgMcl8O@cluster0.omimk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+  "email": {
+    "email": "autocodegrader75@gmail.com",
+    "secrete": "okuiugeaouthupzv"
+  },
+  "token": {
+    "secreteKey": "9834%si^Ko"
+  }
 }

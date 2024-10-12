@@ -1,34 +1,32 @@
-import express from "express"
-import { connectDb } from "./utils/MongodbConnector.js"
-import { authenticationRouter } from "./routes/authRoute.js"
-import cors from "cors"
-import { vendorRouter } from "./routes/vendorRoute.js"
-import { adminRouter } from "./routes/adminRoute.js"
+import express from "express";
+import { connectDb } from "./utils/MongodbConnector.js";
+import { authenticationRouter } from "./routes/authRoute.js";
+import cors from "cors";
+import { vendorRouter } from "./routes/vendorRoute.js";
+import { adminRouter } from "./routes/adminRoute.js";
 
-const app = express()
+const app = express();
 
 //middlewares goes here
-app.use(cors())
-app.use(express.json({limit:"100mb"}))
+app.use(cors());
+app.use(express.json({ limit: "100mb" }));
 
 //routes  middle ware goes here
-app.use("/api", authenticationRouter)
+app.use("/api", authenticationRouter);
 
-app.use("/vendor", vendorRouter)
+app.use("/vendor", vendorRouter);
 
-app.use("/admin", adminRouter)
+app.use("/admin", adminRouter);
 
-
-
-let port = process.env.PORT || 4444
-
+let port = process.env.PORT || 8000;
+console.log(port);
 app.get("/", async (req, res) => {
-    return res.send("ok i am working")
-})
+  return res.send("ok i am working");
+});
 
 app.listen(port, async () => {
-    await connectDb()
-    console.log(`http://localhost:${port}`)
-})
+  await connectDb();
+  console.log(`http://localhost:${port}`);
+});
 
-export {app}
+export { app };

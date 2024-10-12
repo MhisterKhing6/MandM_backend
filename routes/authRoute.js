@@ -1,32 +1,33 @@
-import { Router } from "express"
-import { UserController } from "../controlers/userController.js"
+import { Router } from "express";
+import { UserController } from "../controlers/userController.js";
 
-const authenticationRouter = Router()
+const authenticationRouter = Router();
 /**
  * user registration
  */
-authenticationRouter.post("/signup", UserController.register)
+authenticationRouter.post("/signup", UserController.register);
 
 /**
  * sending email verification number
  */
-authenticationRouter.get("/reset-password/:email", UserController.sendVerificationNumber)
+authenticationRouter.get(
+  "/reset-password/:email",
+  UserController.sendVerificationNumber
+);
 
 /**
  * sending email verification number
  */
-authenticationRouter.post("/verify", UserController.verify)
+authenticationRouter.post("/verify", UserController.verify);
 
 /**
  * login in function
  */
-authenticationRouter.post("/login", UserController.login)
+authenticationRouter.post("/login", UserController.login);
 
 /**
  * update password
  */
-authenticationRouter.post("/update-password", UserController.updatePassword)
+authenticationRouter.post("/update-password", UserController.updatePassword);
 
-
-
-export {authenticationRouter}
+export { authenticationRouter };
