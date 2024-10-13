@@ -4,6 +4,7 @@ import { authenticationRouter } from "./routes/authRoute.js"
 import cors from "cors"
 import { vendorRouter } from "./routes/vendorRoute.js"
 import { adminRouter } from "./routes/adminRoute.js"
+import { userRouter } from "./routes/usersRoute.js"
 
 const app = express()
 
@@ -17,6 +18,8 @@ app.use("/api", authenticationRouter)
 app.use("/vendor", vendorRouter)
 
 app.use("/admin", adminRouter)
+
+app.use('/auth', userRouter)
 
 
 

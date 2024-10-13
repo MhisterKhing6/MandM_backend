@@ -12,6 +12,8 @@ import { VerifyTokenModel } from "../models/verifyToken.js";
 import sha1 from "sha1";
 import { generateToken } from "../utils/WebTokenController.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
+import { StoreModel } from "../models/stores.js";
+import { CategoriesModel } from "../models/categories.js";
 class UserController {
   //register user functions
   static register = async (req, res) => {
@@ -223,11 +225,20 @@ class UserController {
     //generate user token
     let token = generateToken(user);
     let verified = await VerifyIdentityModel.findOne({userId:user._id}).lean()
-    if(verified && verified.status === "verified")
+    if(user.type === "vendor") {
+    if(verified && verified.status === "verified")  {
         user.verified === true
+        user.stores = await StoreModel.find({userId:user._id}).select("-__v").lean()
+    }
     else 
         user.verified === false
+  }
     return res.status(200).json({ user, token });
   };
+
+  static categories = async (req, res) => {
+    let categories = await CategoriesModel.find({}).select("-__v").lean()
+    return res.status(200).json(categories)
+  }
 }
 export { UserController };
