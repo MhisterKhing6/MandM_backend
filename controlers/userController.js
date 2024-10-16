@@ -228,7 +228,7 @@ class UserController {
     if(user.role === "vendor") {
     if(verified && verified.status === "verified")  {
         user.verified = true
-        user.stores = await StoreModel.find({userId:user._id}).select("-__v").lean()
+        user.stores = await StoreModel.find({userId:user._id}).select("-__v").populate({path:"type", select: "name"}).lean()
     }
     else 
         user.verified === false
