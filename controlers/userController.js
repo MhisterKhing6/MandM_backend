@@ -225,9 +225,9 @@ class UserController {
     //generate user token
     let token = generateToken(user);
     let verified = await VerifyIdentityModel.findOne({userId:user._id}).lean()
-    if(user.type === "vendor") {
+    if(user.role === "vendor") {
     if(verified && verified.status === "verified")  {
-        user.verified === true
+        user.verified = true
         user.stores = await StoreModel.find({userId:user._id}).select("-__v").lean()
     }
     else 
