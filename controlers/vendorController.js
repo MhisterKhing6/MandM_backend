@@ -3,8 +3,12 @@ import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
 import { StoreModel } from "../models/stores.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
-import { deleteFolder, generateFileUrl, saveUploadFileDisk } from "../utils/FileHandler.js";
-import path from "path"
+import {
+  deleteFolder,
+  generateFileUrl,
+  saveUploadFileDisk,
+} from "../utils/FileHandler.js";
+import path from "path";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -14,8 +18,8 @@ class VendorController {
     let storeOwnerIdentity = await VerifyIdentityModel.findOne({
       userId: req.user._id,
     });
-    if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-      return res.status(401).json({ message: "vendor identity not verified" });
+    // if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
+    //   return res.status(401).json({ message: "vendor identity not verified" });
     //check if user has store already
     let store = req.body;
     if (
@@ -74,7 +78,7 @@ class VendorController {
         userId: req.user._id,
         idCard: generateFileUrl(idCard.urlPath),
         userPic: generateFileUrl(userPic.urlPath),
-      });
+      }).save();
       return res.status(200).json({
         message: "verification in progress, please wait for 2 working days",
       });
@@ -94,7 +98,9 @@ class VendorController {
         userId: req.user._id,
       });
       if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-        return res.status(401).json({ message: "vendor identity not verified" });
+        return res
+          .status(401)
+          .json({ message: "vendor identity not verified" });
 
       let item = req.body;
       if (
@@ -114,41 +120,60 @@ class VendorController {
       //get user store
       let store = await StoreModel.findById(item.storeId);
       if (!store)
-        return res.status(400).json({ "message": "no store information added" })
+        return res.status(400).json({ message: "no store information added" });
       //check to see if item of the same name is present
-      let savedItem = await ItemModel.findOne({ storeId: store._id, name: item.name })
+      let savedItem = await ItemModel.findOne({
+        storeId: store._id,
+        name: item.name,
+      });
       if (savedItem)
-        return res.status(400).json({ "message": "item already saved" })
+        return res.status(400).json({ message: "item already saved" });
       //item object
-      let itemObject = new ItemModel({ ...item, images: [], storeId: store._id })
+      let itemObject = new ItemModel({
+        ...item,
+        images: [],
+        storeId: store._id,
+      });
       //process sizes
-      let sizesModel = []
+      let sizesModel = [];
       /*
       {name:"64gig", price:"30cedis", quantity: "800"}
       */
       for (const size of item.sizes) {
-        let sizeObj = new ItemSizesModel({ ...size, itemId: itemObject._id })
-        itemObject.itemSizes.push(sizeObj)
-        sizesModel.push(sizeObj.save())
+        let sizeObj = new ItemSizesModel({ ...size, itemId: itemObject._id });
+        itemObject.itemSizes.push(sizeObj);
+        sizesModel.push(sizeObj.save());
       }
       //process images
-      let imagesPromise = []
+      let imagesPromise = [];
       for (const image of item.images) {
         if (!(image.data && image.fileName))
-          return res.status(400).json({ "message": "image should have have a fileName and data" })
-        imagesPromise.push(saveUploadFileDisk(image.fileName, image.data.split("base64,")[1], (itemObject._id.toString() + store._id.toString()), "item"))
+          return res
+            .status(400)
+            .json({ message: "image should have have a fileName and data" });
+        imagesPromise.push(
+          saveUploadFileDisk(
+            image.fileName,
+            image.data.split("base64,")[1],
+            itemObject._id.toString() + store._id.toString(),
+            "item"
+          )
+        );
       }
-      let imagesSaved = await Promise.all(imagesPromise)
-      let imagesModel = []
+      let imagesSaved = await Promise.all(imagesPromise);
+      let imagesModel = [];
       for (const image of imagesSaved) {
-        let imageObj = new ItemImageModel({ itemId: itemObject._id, url: generateFileUrl(image.urlPath), diskPath: image.filePath })
-        itemObject.images.push(imageObj)
-        imagesModel.push(imageObj.save())
+        let imageObj = new ItemImageModel({
+          itemId: itemObject._id,
+          url: generateFileUrl(image.urlPath),
+          diskPath: image.filePath,
+        });
+        itemObject.images.push(imageObj);
+        imagesModel.push(imageObj.save());
       }
       //save items and images
-      if (item.colors)
-        itemObject.colors = item.join(",")
-      await Promise.all([itemObject.save(), ...imagesModel, ...sizesModel])
+      if (item.colors) itemObject.colors = item.join(",");
+      await Promise.all([itemObject.save(), ...imagesModel, ...sizesModel]);
       return res.status(200).json({ message: "item successfully added" });
     } catch (err) {
       console.log(err);
@@ -161,35 +186,49 @@ class VendorController {
     //ensure the  item to edit belongs to the vendor
     //check to see if the vendor own the item
     //check to see if all the details are given
-    let acceptedFields = ["sizes", "name", "images", "description", "colors", "categoryId", "subCategoryId", ""]
-    let itemDetails = req.body
+    let acceptedFields = [
+      "sizes",
+      "name",
+      "images",
+      "description",
+      "colors",
+      "categoryId",
+      "subCategoryId",
+      "",
+    ];
+    let itemDetails = req.body;
     if (!(itemDetails.itemId && itemDetails.storeId))
-      return res.status(400).json({ "message": "itemId is required" })
+      return res.status(400).json({ message: "itemId is required" });
     try {
       let storeOwnerIdentity = await VerifyIdentityModel.findOne({
         userId: req.user._id,
       });
       if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-        return res.status(401).json({ message: "vendor identity not verified" });
+        return res
+          .status(401)
+          .json({ message: "vendor identity not verified" });
 
-      let store = await StoreModel.findById(itemDetails.storeId)
+      let store = await StoreModel.findById(itemDetails.storeId);
 
       if (!store)
         return res.status(400).json({ message: "user doesn't have a store" });
       //check if item exist
-      let item = await ItemModel.findById(itemDetails.itemId)
+      let item = await ItemModel.findById(itemDetails.itemId);
       if (!item)
-        return res.status(400).json({ message: "item not found, check item id" })
+        return res
+          .status(400)
+          .json({ message: "item not found, check item id" });
       //check to see if item belongs to user store
       if (item.storeId.toString() !== store._id.toString())
-        return res.status(401).json({ "message": "item doesn't belong to user store" })
-      let promiseOperations = []
+        return res
+          .status(401)
+          .json({ message: "item doesn't belong to user store" });
+      let promiseOperations = [];
       //update items with new entry
       for (const key of Object.keys(itemDetails)) {
-        if (!acceptedFields.includes(key))
-          continue
+        if (!acceptedFields.includes(key)) continue;
         if (key === "attributes") {
-          item.attributes = { ...item.attributes, ...itemDetails.attributes }
+          item.attributes = { ...item.attributes, ...itemDetails.attributes };
         }
         //process size
         if (key === "sizes" && itemDetails.sizes.length > 0) {
@@ -199,43 +238,72 @@ class VendorController {
             if (size.action === "add") {
               //check to ensure all fields are given
               if (!(size.price && size.name && size.quantity))
-                return res.status(400).json({ message: "to add new sizes, name,price and quantity are required fields" })
+                return res.status(400).json({
+                  message:
+                    "to add new sizes, name,price and quantity are required fields",
+                });
               //form size model
-              promiseOperations.push(new ItemSizesModel({ itemId: item._id, ...size }).save())
-            }
-            else if (size.action === "delete") {
+              promiseOperations.push(
+                new ItemSizesModel({ itemId: item._id, ...size }).save()
+              );
+            } else if (size.action === "delete") {
               if (!size.sizeId)
-                return res.status(400).json({ "message": "sizeId is required to delete the size" })
-              let itemSize = await ItemSizesModel.findById(size.sizeId)
+                return res
+                  .status(400)
+                  .json({ message: "sizeId is required to delete the size" });
+              let itemSize = await ItemSizesModel.findById(size.sizeId);
               if (itemSize.itemId.toString() !== item.id.toString())
-                return res.status(401).json({ "message": "size doesn't belong to user item given." })
-              promiseOperations.push(ItemSizesModel.deleteOne({ _id: size.sizeId }))
+                return res
+                  .status(401)
+                  .json({ message: "size doesn't belong to user item given." });
+              promiseOperations.push(
+                ItemSizesModel.deleteOne({ _id: size.sizeId })
+              );
             } else {
               if (!size.sizeId)
-                return res.status(400).json({ "message": "to update item size, sizeId is required" })
-              let itemSize = await ItemSizesModel.findById(size.sizeId)
+                return res
+                  .status(400)
+                  .json({ message: "to update item size, sizeId is required" });
+              let itemSize = await ItemSizesModel.findById(size.sizeId);
               if (!itemSize)
-                return res.status.json({ message: "wrong size id, not size entry found for such id" })
+                return res.status.json({
+                  message: "wrong size id, not size entry found for such id",
+                });
               if (itemSize.itemId.toString() !== item.id.toString())
-                return res.status(401).json({ "message": "size doesn't belong to user item given." })
+                return res
+                  .status(401)
+                  .json({ message: "size doesn't belong to user item given." });
               for (const sizeDetails of Object.keys(size))
-                itemSize[sizeDetails] = size[sizeDetails] || itemSize[sizeDetails]
-              promiseOperations.push(itemSize.save())
+                itemSize[sizeDetails] =
+                  size[sizeDetails] || itemSize[sizeDetails];
+              promiseOperations.push(itemSize.save());
             }
           }
-
         } else if (key === "images" && itemDetails.images.length > 0) {
           for (const image of itemDetails.images) {
             if (!(image.data && image.fileName))
-              return res.status(400).json({ "message": "image should have have a fileName and data" })
-            let imageSave = await saveUploadFileDisk(image.fileName, image.data.split("base64,")[1], (item._id.toString() + store._id.toString()), "item")
-            promiseOperations.push(new ItemImageModel({ url: generateFileUrl(imageSave.urlPath), itemId: itemDetails.itemId, diskPath: imageSave.filePath }).save())
+              return res.status(400).json({
+                message: "image should have have a fileName and data",
+              });
+            let imageSave = await saveUploadFileDisk(
+              image.fileName,
+              image.data.split("base64,")[1],
+              item._id.toString() + store._id.toString(),
+              "item"
+            );
+            promiseOperations.push(
+              new ItemImageModel({
+                url: generateFileUrl(imageSave.urlPath),
+                itemId: itemDetails.itemId,
+                diskPath: imageSave.filePath,
+              }).save()
+            );
           }
         } else {
-          item[key] = itemDetails[key]
+          item[key] = itemDetails[key];
         }
       }
-      await Promise.all([item.save(), ...promiseOperations])
+      await Promise.all([item.save(), ...promiseOperations]);
       return res.status(200).json({ message: "item updated successfully" });
     } catch (err) {
       console.log(err);
@@ -246,49 +314,58 @@ class VendorController {
   static toggleItem = async (req, res) => {
     //ensure item id is given
     //check status to see if is enabled or disabled
-    let details = req.body
+    let details = req.body;
     if (!(details.itemId && details.status && details.storeId))
-      return res.status(400).json({ message: "not all fields given, itemId and status required" })
+      return res
+        .status(400)
+        .json({ message: "not all fields given, itemId and status required" });
     try {
-      let item = await ItemModel.findById(details.itemId)
+      let item = await ItemModel.findById(details.itemId);
       if (!item)
-        return res.status(400).json({ "message": "wrong item id, not item found" })
+        return res
+          .status(400)
+          .json({ message: "wrong item id, not item found" });
       //check if item belongs to user store
-      let store = await StoreModel.findById(details.storeId)
+      let store = await StoreModel.findById(details.storeId);
       if (store._id.toString() !== item.storeId.toString())
-        return res.status(401).json({ "message": "item doesn't belong to user's store" })
-      item.enable = details.status === "enable"
-      await item.save()
-      return res.status(200).json({ "message": "item visibility changed", item })
+        return res
+          .status(401)
+          .json({ message: "item doesn't belong to user's store" });
+      item.enable = details.status === "enable";
+      await item.save();
+      return res.status(200).json({ message: "item visibility changed", item });
     } catch (err) {
-      console.log(err)
-      return res.status(500).json({ "message": "internal error" })
+      console.log(err);
+      return res.status(500).json({ message: "internal error" });
     }
-  }
+  };
 
   static toggleItemSize = async (req, res) => {
     //ensure item id is given
     //check status to see if is enabled or disabled
-    let details = req.body
+    let details = req.body;
     if (!(details.sizeId && details.status && details.storeId))
-      return res.status(400).json({ message: "not all fields given, sizeId and status required" })
+      return res
+        .status(400)
+        .json({ message: "not all fields given, sizeId and status required" });
     try {
-      let size = await ItemSizesModel.findById(details.sizeId)
-      if (!size)
-        return res.status(400).json({ "message": "wrong size id" })
+      let size = await ItemSizesModel.findById(details.sizeId);
+      if (!size) return res.status(400).json({ message: "wrong size id" });
       //check if item belongs to user store
-      let store = await StoreModel.findById(details.storeId)
-      let item = await ItemModel.findById(size.itemId)
+      let store = await StoreModel.findById(details.storeId);
+      let item = await ItemModel.findById(size.itemId);
       if (store._id.toString() !== item.storeId.toString())
-        return res.status(401).json({ "message": "item doesn't belong to user's store" })
-      size.enable = details.status === "enable"
-      await size.save()
-      return res.status(200).json({ "message": "size visibility changed", size })
+        return res
+          .status(401)
+          .json({ message: "item doesn't belong to user's store" });
+      size.enable = details.status === "enable";
+      await size.save();
+      return res.status(200).json({ message: "size visibility changed", size });
     } catch (err) {
-      console.log(err)
-      return res.status(500).json({ "message": "internal error" })
+      console.log(err);
+      return res.status(500).json({ message: "internal error" });
     }
-  }
+  };
 
   static deleteItem = async (req, res) => {
     //ensure item id is given
@@ -299,26 +376,43 @@ class VendorController {
         userId: req.user._id,
       });
       if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-        return res.status(401).json({ message: "vendor identity not verified" });
-      let storeId = req.params.storeId
-      let store = await StoreModel.findById(storeId)
+        return res
+          .status(401)
+          .json({ message: "vendor identity not verified" });
+      let storeId = req.params.storeId;
+      let store = await StoreModel.findById(storeId);
       if (!store)
         return res.status(400).json({ message: "user doesn't have a store" });
 
-      let itemId = req.params.itemId
-      let item = await ItemModel.findById(itemId)
+      let itemId = req.params.itemId;
+      let item = await ItemModel.findById(itemId);
       if (!item)
-        return res.status(400).json({ message: "no item entry found, check item id" })
+        return res
+          .status(400)
+          .json({ message: "no item entry found, check item id" });
       if (item.storeId.toString() !== store._id.toString())
-        return res.status(401).json({ message: "item doesn't belong to user's store" })
-      await Promise.all([ItemModel.deleteOne({ _id: itemId }), ItemImageModel.deleteMany({ itemId }), ItemSizesModel.deleteMany({ itemId })])
-      deleteFolder(path.join(path.resolve("."), "public", "store-items", (req.user._id.toString() + itemId)))
-      return res.status(200).json({ "message": "item deleted" })
+        return res
+          .status(401)
+          .json({ message: "item doesn't belong to user's store" });
+      await Promise.all([
+        ItemModel.deleteOne({ _id: itemId }),
+        ItemImageModel.deleteMany({ itemId }),
+        ItemSizesModel.deleteMany({ itemId }),
+      ]);
+      deleteFolder(
+        path.join(
+          path.resolve("."),
+          "public",
+          "store-items",
+          req.user._id.toString() + itemId
+        )
+      );
+      return res.status(200).json({ message: "item deleted" });
     } catch (err) {
-      console.log(err)
-      return res.status(500).json({ "message": "internal error" })
+      console.log(err);
+      return res.status(500).json({ message: "internal error" });
     }
-  }
+  };
 
   static deleteItemSize = async (req, res) => {
     //ensure item id is given
@@ -329,51 +423,63 @@ class VendorController {
     });
     if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
       return res.status(401).json({ message: "vendor identity not verified" });
-    let storeId = req.params.storeId
-    let store = await StoreModel.findById(storeId)
+    let storeId = req.params.storeId;
+    let store = await StoreModel.findById(storeId);
     if (!store)
       return res.status(400).json({ message: "user doesn't have a store" });
-    let sizeId = req.params.sizeId
-    let itemSize = await ItemSizesModel.findById(sizeId)
+    let sizeId = req.params.sizeId;
+    let itemSize = await ItemSizesModel.findById(sizeId);
     if (!itemSize)
-      return res.status(400).json({ message: "wrong size id, no size  entry found" })
-    let item = await ItemModel.findById(itemSize.itemId)
+      return res
+        .status(400)
+        .json({ message: "wrong size id, no size  entry found" });
+    let item = await ItemModel.findById(itemSize.itemId);
     if (item.storeId.toString() !== store._id.toString())
-      return res.status(401).json({ message: "item doesn't belong to user's store" })
+      return res
+        .status(401)
+        .json({ message: "item doesn't belong to user's store" });
     try {
-      await ItemSizesModel.deleteOne({ _id: sizeId })
-      return res.status(200).json({ "message": "size deleted" })
+      await ItemSizesModel.deleteOne({ _id: sizeId });
+      return res.status(200).json({ message: "size deleted" });
     } catch (err) {
-      console.log(err)
-      return res.status(500).json({ "message": "internal error" })
+      console.log(err);
+      return res.status(500).json({ message: "internal error" });
     }
-  }
+  };
 
   static getStoreItems = async (req, res) => {
     try {
-      let storeId = req.params.storeId
-      let limit = req.query.limit ? req.query.limit : 30
-      let page = req.query.page ? req.query.page : 1
-      if (page < 0)
-        page = 1
-      let offset = (page - 1) * limit
+      let storeId = req.params.storeId;
+      let limit = req.query.limit ? req.query.limit : 30;
+      let page = req.query.page ? req.query.page : 1;
+      if (page < 0) page = 1;
+      let offset = (page - 1) * limit;
       let storeOwnerIdentity = await VerifyIdentityModel.findOne({
         userId: req.user._id,
       });
       if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-        return res.status(401).json({ message: "vendor identity not verified" });
+        return res
+          .status(401)
+          .json({ message: "vendor identity not verified" });
 
-      let store = await StoreModel.findById(storeId)
+      let store = await StoreModel.findById(storeId);
       if (!store)
         return res.status(400).json({ message: "no store entry found" });
 
-      let count = await ItemModel.countDocuments({ storeId: store._id })
-      let userItems = await ItemModel.find({ storeId: store._id }).skip(offset).limit(limit).populate("images", "url").populate("itemSizes", "-__v").populate("categoryId", "-__v").populate("subCategoryId", "-__v").lean()
-      return res.status(200).json({ limit, page, count, items: userItems })
+      let count = await ItemModel.countDocuments({ storeId: store._id });
+      let userItems = await ItemModel.find({ storeId: store._id })
+        .skip(offset)
+        .limit(limit)
+        .populate("images", "url")
+        .populate("itemSizes", "-__v")
+        .populate("categoryId", "-__v")
+        .populate("subCategoryId", "-__v")
+        .lean();
+      return res.status(200).json({ limit, page, count, items: userItems });
     } catch (err) {
-      console.log(err)
-      return res.status(500).json({ message: "internal error" })
+      console.log(err);
+      return res.status(500).json({ message: "internal error" });
     }
-  }
+  };
 }
 export { VendorController };

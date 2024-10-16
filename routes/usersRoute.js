@@ -15,7 +15,7 @@ const authenticatedMiddleWare = (req, res, next) => {
     next()
 }
 
-userRouter.use(authenticatedMiddleWare)
+//userRouter.use(authenticatedMiddleWare)
 /**
  * fetch categories
  */
