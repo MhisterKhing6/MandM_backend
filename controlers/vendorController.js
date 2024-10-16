@@ -320,6 +320,12 @@ class VendorController {
     }
   }
 
+  static getStores = async (req, res) => {
+    //returns the stores of the user
+    let stores = await StoreModel.find({userId:req.user._id}).populate({path:"type",  select: 'name _id'}).lean()
+    return res.status(200).json(stores)
+  }
+
   static deleteItemSize = async (req, res) => {
     //ensure item id is given
     //use item id to delete item
