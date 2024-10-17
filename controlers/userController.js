@@ -216,22 +216,18 @@ class UserController {
     //search for user
     let user = await UserModel.findOne(query).lean();
     if (!user)
-      return res
-        .status(400)
-        .json({ message: "Invalid credentials or User is not registered" });
+      return res.status(400).json({ message: "user is not registered" });
     //check if passwords match
     if (user.password !== sha1(loginDetails.password))
-      return res
-        .status(400)
-        .json({ message: "Wrong credentials check and try again!!" });
+      return res.status(400).json({ message: "wrong user password" });
     //generate user token
     let token = generateToken(user);
     let verified = await VerifyIdentityModel.findOne({
       userId: user._id,
     }).lean();
-    if (user.type === "vendor") {
+    if (user.role === "vendor") {
       if (verified && verified.status === "verified") {
-        user.verified === true;
+        user.verified = true;
         user.stores = await StoreModel.find({ userId: user._id })
           .select("-__v")
           .lean();
