@@ -21,7 +21,9 @@ app.use("/admin", adminRouter)
 
 app.use('/auth', userRouter)
 
+//setting up static route
 
+app.use('/public',express.static('public'))
 
 let port = process.env.PORT || 4444
 
