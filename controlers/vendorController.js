@@ -104,15 +104,14 @@ class VendorController {
 
       let item = req.body;
       if (
-        !(
-          item.categoryId &&
+        !(item.categoryId &&
           item.subCategoryId &&
           item.name &&
           item.description &&
           item.sizes &&
           item.images &&
-          item.storeId
-        )
+          item.quantity,
+        item.storeId)
       )
         return res.status(400).json({ message: "not all fields given" });
       //save store information
@@ -412,6 +411,14 @@ class VendorController {
       console.log(err);
       return res.status(500).json({ message: "internal error" });
     }
+  };
+
+  static getStores = async (req, res) => {
+    //returns the stores of the user
+    let stores = await StoreModel.find({ userId: req.user._id })
+      .populate({ path: "type", select: "name _id" })
+      .lean();
+    return res.status(200).json(stores);
   };
 
   static deleteItemSize = async (req, res) => {
