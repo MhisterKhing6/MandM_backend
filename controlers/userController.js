@@ -14,6 +14,8 @@ import { generateToken } from "../utils/WebTokenController.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import { StoreModel } from "../models/stores.js";
 import { CategoriesModel } from "../models/categories.js";
+import Cart from "../models/cart.js";
+import { ItemModel } from "../models/items.js";
 class UserController {
   //register user functions
   static register = async (req, res) => {
@@ -244,5 +246,347 @@ class UserController {
       .lean();
     return res.status(200).json(categories);
   };
+
+  static getNearStoresByCategory = async (req, res) => {
+    try {
+      const { longitude, latitude, maxDistance = 500000 } = req.query;
+
+      if (!longitude || !latitude) {
+        return res
+          .status(400)
+          .json({ error: "longitude and latitude are required" });
+      }
+
+      const distance = parseInt(maxDistance, 10);
+      const userLocation = [parseFloat(longitude), parseFloat(latitude)];
+
+      const storesByCategory = await StoreModel.aggregate([
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: userLocation },
+            distanceField: "distance",
+            maxDistance: distance,
+            spherical: true,
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            storeName: 1,
+            type: 1, // Keep type to group by categories later
+          },
+        },
+        {
+          $group: {
+            _id: "$type", // Group by category ID
+            stores: { $push: { _id: "$_id", storeName: "$storeName" } }, // Only store id and name
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "categoryDetails",
+          },
+        },
+        {
+          $unwind: "$categoryDetails",
+        },
+        {
+          $project: {
+            _id: 0, // Exclude the grouped `_id` from the output
+            category: "$categoryDetails.name", // Rename the category details as needed
+            stores: 1,
+          },
+        },
+      ]);
+
+      res.status(200).json(storesByCategory);
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while fetching stores" });
+    }
+  };
+
+  static getItemsByStoreId = async (req, res) => {
+    try {
+      const { storeId } = req.params;
+
+      if (!storeId) {
+        return res.status(400).json({ error: "Store ID is required" });
+      }
+
+      const items = await ItemModel.find({ storeId })
+        .populate("itemSizes") // Populate the details of each itemSize
+        .populate("images"); // Fetch all fields
+      res.status(200).json(items);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "An error occurred while fetching items" });
+    }
+  };
+
+  // static addToCart = async (req, res) => {
+  //   const { userId, productId, quantity, price, addons, name } = req.body;
+  //   let cart = await Cart.findOne({ userId });
+
+  //   const newItem = {
+  //     productId,
+  //     name,
+  //     quantity,
+  //     price,
+  //     addons:
+  //       addons?.map((addon) => ({
+  //         name: addon.name,
+  //         price: addon.price,
+  //         quantity: addon.quantity || 1, // Default to 1 if quantity not provided
+  //       })) || [],
+  //   };
+
+  //   if (!cart) {
+  //     cart = new Cart({ userId, items: [newItem] });
+  //   } else {
+  //     const itemIndex = cart.items.findIndex(
+  //       (item) => item.productId === productId
+  //     );
+  //     if (itemIndex > -1) {
+  //       cart.items[itemIndex].quantity += quantity;
+  //       cart.items[itemIndex].addons = addons || cart.items[itemIndex].addons;
+  //     } else {
+  //       cart.items.push(newItem);
+  //     }
+  //   }
+
+  //   await cart.save();
+  //   res.json(cart);
+  // };
+
+  static addToCart = async (req, res) => {
+    const { userId, storeId, productId, quantity, price, addons, name } =
+      req.body;
+    let cart = await Cart.findOne({ userId });
+
+    const newItem = {
+      productId,
+      name,
+
+      quantity,
+      price,
+      addons:
+        addons?.map((addon) => ({
+          name: addon.name,
+          price: addon.price,
+          quantity: addon.quantity || 1,
+        })) || [],
+    };
+    console.log(newItem);
+    if (!cart) {
+      // If no cart exists, create a new cart with the store and item
+      cart = new Cart({
+        userId,
+        stores: [{ storeId, items: [newItem] }],
+      });
+    } else {
+      // Check if this store already exists in the cart
+      const storeIndex = cart.stores.findIndex(
+        (store) => store.storeId === storeId
+      );
+
+      if (storeIndex > -1) {
+        // Store exists, check if item exists within the store
+        const itemIndex = cart.stores[storeIndex].items.findIndex(
+          (item) => item.productId === productId
+        );
+
+        if (itemIndex > -1) {
+          // Item exists, update quantity and addons
+          cart.stores[storeIndex].items[itemIndex].quantity += quantity;
+          cart.stores[storeIndex].items[itemIndex].addons =
+            addons || cart.stores[storeIndex].items[itemIndex].addons;
+        } else {
+          // Item does not exist, add it to the store's items
+          cart.stores[storeIndex].items.push(newItem);
+        }
+      } else {
+        // Store does not exist, add the store with the new item
+        cart.stores.push({ storeId, items: [newItem] });
+      }
+    }
+
+    await cart.save();
+    res.json(cart);
+  };
+
+  // Increase quantity of an item in the cart
+  static inCreaseCartQuantity = async (req, res) => {
+    const { userId, productId } = req.body;
+
+    try {
+      const cart = await Cart.findOneAndUpdate(
+        { userId, "items.productId": productId },
+        { $inc: { "items.$.quantity": 1 } },
+        { new: true }
+      );
+      res.status(200).json(cart);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to increase quantity" });
+    }
+  };
+
+  // Decrease quantity of an item in the cart
+  static decreaseCartQuantity = async (req, res) => {
+    const { userId, productId } = req.body;
+
+    try {
+      const cart = await Cart.findOneAndUpdate(
+        { userId, "items.productId": productId, "items.quantity": { $gt: 1 } },
+        { $inc: { "items.$.quantity": -1 } },
+        { new: true }
+      );
+      res.status(200).json(cart);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to decrease quantity" });
+    }
+  };
+
+  // Remove an item from the cart
+  static removeFromCart = async (req, res) => {
+    const { userId, productId } = req.body;
+
+    try {
+      const cart = await Cart.findOneAndUpdate(
+        { userId },
+        { $pull: { items: { productId } } },
+        { new: true }
+      );
+      res.status(200).json(cart);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove item" });
+    }
+  };
+  static fetchCartItems = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+      const cart = await Cart.findOne({ userId });
+      console.log(cart);
+      if (cart) {
+        res.status(200).json(cart);
+      } else {
+        res.status(200).json([]); // Empty array if cart does not exist
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cart items" });
+    }
+  };
 }
 export { UserController };
+
+// static getNearStoresAndItems = async (req, res) => {
+//   try {
+//     const { longitude, latitude, maxDistance = 5000 } = req.query;
+
+//     if (!longitude || !latitude) {
+//       return res
+//         .status(400)
+//         .json({ error: "longitude and latitude are required" });
+//     }
+
+//     const distance = parseInt(maxDistance, 10);
+//     const userLocation = [parseFloat(longitude), parseFloat(latitude)];
+
+//     const storesByCategory = await StoreModel.aggregate([
+//       {
+//         $geoNear: {
+//           near: { type: "Point", coordinates: userLocation },
+//           distanceField: "distance",
+//           maxDistance: distance,
+//           spherical: true,
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "items",
+//           localField: "_id",
+//           foreignField: "storeId",
+//           as: "items",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$items",
+//           preserveNullAndEmptyArrays: true, // Allow stores without items
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "itemsizes",
+//           localField: "items.itemSizes",
+//           foreignField: "_id",
+//           as: "items.itemSizesDetails",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "categories",
+//           localField: "items.categoryId",
+//           foreignField: "_id",
+//           as: "categoryDetails",
+//         },
+//       },
+//       {
+//         $unwind: "$categoryDetails",
+//       },
+//       {
+//         $group: {
+//           _id: "$categoryDetails._id",
+//           category: { $first: "$categoryDetails.name" },
+//           stores: {
+//             $addToSet: {
+//               storeId: "$_id",
+//               storeName: "$storeName",
+//               distance: "$distance",
+//               items: {
+//                 $cond: {
+//                   if: { $isArray: "$items" }, // Ensure items is an array
+//                   then: {
+//                     $map: {
+//                       input: "$items",
+//                       as: "item",
+//                       in: {
+//                         itemId: "$$item._id",
+//                         name: "$$item.name",
+//                         description: "$$item.description",
+//                         itemSizes: "$$item.itemSizesDetails",
+//                         attributes: "$$item.attributes",
+//                       },
+//                     },
+//                   },
+//                   else: [],
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 0,
+//           categoryId: "$_id",
+//           categoryName: "$category",
+//           stores: 1,
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json(storesByCategory);
+//   } catch (error) {
+//     console.error(error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while fetching stores" });
+//   }
+// };

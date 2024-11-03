@@ -25,6 +25,10 @@ app.use("/auth", userRouter);
 
 let port = process.env.PORT || 8000;
 console.log(port);
+//setting up static route
+
+app.use("/public", express.static("public"));
+
 app.get("/", async (req, res) => {
   return res.send("ok i am working");
 });

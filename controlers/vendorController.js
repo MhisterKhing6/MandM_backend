@@ -34,7 +34,18 @@ class VendorController {
       return res.status(400).json({ message: "not all fields given" });
     //save store information
     try {
-      await new StoreModel({ userId: req.user._id, ...store }).save();
+      const newStore = new StoreModel({
+        userId: req.user._id,
+        storeName: store.storeName,
+        storeAddress: store.storeAddress,
+        storePhone: store.storePhone,
+        location: {
+          type: "Point",
+          coordinates: [store.longitude, store.latitude], // [longitude, latitude]
+        },
+        type: store.type,
+      });
+      await newStore.save();
       return res.status(200).json({ message: "store successfully added" });
     } catch (err) {
       console.log(err);
@@ -489,4 +500,9 @@ class VendorController {
     }
   };
 }
+
+// Import necessary modules
+
+// Endpoint to fetch nearby stores grouped by category, with items included
+
 export { VendorController };
