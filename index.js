@@ -21,11 +21,12 @@ app.use("/admin", adminRouter);
 
 app.use("/auth", userRouter);
 
-// let port = process.env.PORT || 4444
 
 let port = process.env.PORT || 8000;
 console.log(port);
 //setting up static route
+app.use('/public',express.static('public'))
+
 
 app.use("/public", express.static("public"));
 
