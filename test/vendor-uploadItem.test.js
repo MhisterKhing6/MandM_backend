@@ -31,21 +31,20 @@ describe("test codes for vendor functions", () => {
     password: sha1("987321"),
     phoneNumber: "8758552214",
   };
-  
 
   let token1 = generateToken(user1);
   let token2 = "";
   after(async () => {
     await UserModel.deleteMany({});
-    await VerifyIdentityModel.deleteMany({})
-    await ItemImageModel.deleteMany({})
-    await ItemModel.deleteMany({})
-    await ItemSizesModel.deleteMany({})
-    await CategoriesModel.deleteMany({})
+    await VerifyIdentityModel.deleteMany({});
+    await ItemImageModel.deleteMany({});
+    await ItemModel.deleteMany({});
+    await ItemSizesModel.deleteMany({});
+    await CategoriesModel.deleteMany({});
   });
   before(async () => {
     await UserModel.deleteMany({});
-    await VerifyIdentityModel.deleteMany({})
+    await VerifyIdentityModel.deleteMany({});
     await Promise.all([
       new UserModel(user1).save(),
       new UserModel(user2).save(),
@@ -57,7 +56,6 @@ describe("test codes for vendor functions", () => {
       .set("content-type", "application/json");
     token2 = response.body.token;
     user = response.body.user;
-
   });
   it("should return status 400 with no authorization token given", async () => {
     let data = { name: "kingsley" };
@@ -109,9 +107,9 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 400, with no store information added", async () => {
     let data = {
-      "name": "Google Pixel 9 pro",
-      "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-      "year":"2022"
+      name: "Google Pixel 9 pro",
+      description: "Google phone running android 18 with 8 gig ram, 2023 model",
+      year: "2022",
     };
     let response = await request(app)
       .post(url)
@@ -123,15 +121,19 @@ describe("test codes for vendor functions", () => {
     assert.equal(response.body.message, "vendor identity not verified");
   });
 
-
   it("should return status of 400, with not all fields given", async () => {
     let data = {
       storeName: "Kwame Anan",
       latitude: "987752111",
       longitude: "98838883",
     };
-    let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
-    await identity.save()
+    let identity = new VerifyIdentityModel({
+      userId: user,
+      status: "verified",
+      userPic: "path to user pic",
+      idCard: "path to id card",
+    });
+    await identity.save();
     let response = await request(app)
       .post(url)
       .send(data)
@@ -144,21 +146,35 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 400, with not all fields given", async () => {
     let data = {
-        "storeId": user._id.toString(),
-        "categoryId": "9888888",
-        "subCategoryId": "2222222",
-        "name": "Google Pixel 9 pro",
-        "attributes": {color:["yellow", "pink", "brown"]},
-        "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
-        "sizes": [
-            {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
-        ]
-      };
-    let identity = new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"});
-    await identity.save()
+      storeId: user._id.toString(),
+      categoryId: "9888888",
+      subCategoryId: "2222222",
+      name: "Google Pixel 9 pro",
+      attributes: { color: ["yellow", "pink", "brown"] },
+      description: "Google phone running android 18 with 8 gig ram, 2023 model",
+      images: [
+        {
+          fileName: "image1.txt",
+          data: `base64,${Buffer.from("ImageData").toString("base64")}`,
+        },
+        {
+          fileName: "image2.txt",
+          data: `base64,${Buffer.from("ImageData2").toString("base64")}`,
+        },
+      ],
+      sizes: [
+        { name: "13gb ROM and 5 gig Ram", price: 566, quantity: 200 },
+        { name: "18gb ROM and 5 gig Ram", price: 566, quantity: 200 },
+        { name: "12gb ROM and 5 gig Ram", price: 566, quantity: 200 },
+      ],
+    };
+    let identity = new VerifyIdentityModel({
+      userId: user,
+      status: "verified",
+      userPic: "path to user pic",
+      idCard: "path to id card",
+    });
+    await identity.save();
     let response = await request(app)
       .post(url)
       .send(data)
@@ -170,23 +186,44 @@ describe("test codes for vendor functions", () => {
   });
   //phones
   it("should return status of 200", async () => {
-    await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    let category = await new CategoriesModel({name: "electronics"}).save()
-    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    await new VerifyIdentityModel({
+      userId: user,
+      status: "verified",
+      userPic: "path to user pic",
+      idCard: "path to id card",
+    }).save();
+    let category = await new CategoriesModel({ name: "electronics" }).save();
+    let store = await new StoreModel({
+      type: category._id,
+      storeName: "Afa Papa Accessories",
+      storePhone: "+22222222222222",
+      userId: user._id,
+      latitude: "23333333",
+      longitude: "33333333",
+    }).save();
     let data = {
-        "categoryId": user._id.toString(),
-        "subCategoryId": user._id.toString(),
-        "name": "Google Pixel 9 pro",
-        "storeId": store._id,
-        "description": "Google phone running android 18 with 8 gig ram, 2023 model",
-        "attributes": {"year":2022, colors:["brown", "yellow", "pink"]},
-        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
-        "sizes": [
-            {"name": "13gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "18gb ROM and 5 gig Ram", price:566, "quantity": 200},
-            {"name": "12gb ROM and 5 gig Ram", price:566, "quantity": 200}
-        ]
-      };
+      categoryId: user._id.toString(),
+      subCategoryId: user._id.toString(),
+      name: "Google Pixel 9 pro",
+      storeId: store._id,
+      description: "Google phone running android 18 with 8 gig ram, 2023 model",
+      attributes: { year: 2022, colors: ["brown", "yellow", "pink"] },
+      images: [
+        {
+          fileName: "image1.txt",
+          data: `base64,${Buffer.from("ImageData").toString("base64")}`,
+        },
+        {
+          fileName: "image2.txt",
+          data: `base64,${Buffer.from("ImageData2").toString("base64")}`,
+        },
+      ],
+      sizes: [
+        { name: "13gb ROM and 5 gig Ram", price: 566, quantity: 200 },
+        { name: "18gb ROM and 5 gig Ram", price: 566, quantity: 200 },
+        { name: "12gb ROM and 5 gig Ram", price: 566, quantity: 200 },
+      ],
+    };
     let response = await request(app)
       .post(url)
       .send(data)
@@ -196,23 +233,44 @@ describe("test codes for vendor functions", () => {
     assert.equal(response.status, 200);
   });
 
-   //food
-   it("should return status of 200", async () => {
-    await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    let category = await new CategoriesModel({name: "electronics"}).save()
-    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+  //food
+  it("should return status of 200", async () => {
+    await new VerifyIdentityModel({
+      userId: user,
+      status: "verified",
+      userPic: "path to user pic",
+      idCard: "path to id card",
+    }).save();
+    let category = await new CategoriesModel({ name: "electronics" }).save();
+    let store = await new StoreModel({
+      type: category._id,
+      storeName: "Afa Papa Accessories",
+      storePhone: "+22222222222222",
+      userId: user._id,
+      latitude: "23333333",
+      longitude: "33333333",
+    }).save();
     let data = {
-        "categoryId": user._id.toString(),
-        "subCategoryId": user._id.toString(),
-        "name": "Waakye",
-        "storeId": store._id,
-        "description": "Waakye with fifuslklsjflsjflsjflsjflsjflsjflsjfls",
-        "attributes": {toppings:{makroni:20, beans:55, fish:30}},
-        "images": [{"fileName": "image1.txt", data:`base64,${Buffer.from("ImageData").toString("base64")}`},{"fileName": "image2.txt", data:`base64,${Buffer.from("ImageData2").toString("base64")}`}],
-        "sizes": [
-            {"name": "medium",description:"waakye na makksoslf", price:566}
-          ]
-      };
+      categoryId: user._id.toString(),
+      subCategoryId: user._id.toString(),
+      name: "Waakye",
+      storeId: store._id,
+      description: "Waakye with fifuslklsjflsjflsjflsjflsjflsjflsjfls",
+      attributes: { toppings: { makroni: 20, beans: 55, fish: 30 } },
+      images: [
+        {
+          fileName: "image1.txt",
+          data: `base64,${Buffer.from("ImageData").toString("base64")}`,
+        },
+        {
+          fileName: "image2.txt",
+          data: `base64,${Buffer.from("ImageData2").toString("base64")}`,
+        },
+      ],
+      sizes: [
+        { name: "medium", description: "waakye na makksoslf", price: 566 },
+      ],
+    };
     let response = await request(app)
       .post(url)
       .send(data)
@@ -221,5 +279,4 @@ describe("test codes for vendor functions", () => {
       .set("content-type", "application/json");
     assert.equal(response.status, 200);
   });
-
 });
