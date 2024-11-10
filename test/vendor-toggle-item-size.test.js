@@ -94,7 +94,7 @@ describe("test codes for vendor functions", () => {
         user3.db = user3Login.body.user;
         category = await new CategoriesModel(category).save()
         await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
-        user3Store.db = await new StoreModel({type: category._id ,storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+        user3Store.db = await new StoreModel({location: {coordinates: [6.666600,-1.616271 ] },type: category._id ,storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
         user3Item.categoryId = user._id;
         user3Item.subCategoryId = user._id
         user3Item.db = await new ItemModel({ storeId: user3Store.db._id, ...user3Item }).save()
@@ -170,7 +170,7 @@ describe("test codes for vendor functions", () => {
 
     it("should return status of 401, with item doesn't belong store", async () => {
         await new VerifyIdentityModel({ userId: user, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save();
-        let user2Store = await new StoreModel({type:category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
+        let user2Store = await new StoreModel({location: {coordinates: [6.666600,-1.616271 ] },type:category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user._id, latitude: "23333333", "longitude": "33333333" }).save()
         let data = {sizeId: itemSize.db._id, status:"enable", storeId:user2Store._id}
         let response = await request(app)
             .put(url)

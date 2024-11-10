@@ -151,7 +151,7 @@ describe("test codes for vendor functions", () => {
   it("should return status of 200", async () => {
 
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let store = await new StoreModel({location: {coordinates: [6.666600,-1.616271 ] },type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
     let data = {
       "categoryId": user._id.toString(),
       "subCategoryId": user._id.toString(),
@@ -188,7 +188,7 @@ describe("test codes for vendor functions", () => {
 
   it("should return status of 200, with body having items, count, page, limit", async () => {
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
-    let store = await new StoreModel({type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
+    let store = await new StoreModel({location: {coordinates: [6.666600,-1.616271 ] },type:category._id,storeName:"Afa Papa Accessories", storePhone:"+22222222222222",userId:user._id, latitude:"23333333", "longitude":"33333333"}).save()
     let data = {
       "categoryId": user._id.toString(),
       "subCategoryId": user._id.toString(),

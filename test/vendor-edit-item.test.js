@@ -91,8 +91,8 @@ describe("test codes for vendor functions", () => {
     user3.db = user3Login.body.user;
     category = await new CategoriesModel(category).save()
     await new VerifyIdentityModel({ userId: user3.db._id, status: "verified", userPic: "path to user pic", "idCard": "path to id card" }).save()
-    user3Store.db = await new StoreModel({ type: category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
-    user2Store.db = await new StoreModel({ storePhone: "+666666666666666", userId: user._id, type: category._id, longitude: "233333", storeName: "Afa ppp", latitude: "skslsklsls", storePhone: "klskflsfjlsf" }).save()
+    user3Store.db = await new StoreModel({ location: {coordinates: [6.666600,-1.616271 ] },type: category._id, storeName: "Afa Papa Accessories", storePhone: "+22222222222222", userId: user3.db._id, latitude: "23333333", "longitude": "33333333" }).save()
+    user2Store.db = await new StoreModel({ location: {coordinates: [6.666600,-1.616271 ] },storePhone: "+666666666666666", userId: user._id, type: category._id, longitude: "233333", storeName: "Afa ppp", latitude: "skslsklsls", storePhone: "klskflsfjlsf" }).save()
     user3Item.categoryId = user._id;
     user3Item.subCategoryId = user._id
 

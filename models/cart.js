@@ -14,10 +14,12 @@ const cartItemSchema = new mongoose.Schema({
   addons: [addonSchema],
 });
 
+
 const storeSchema = new mongoose.Schema({
   storeId: String, // Unique identifier for each store
   items: [cartItemSchema], // Items specific to this store
 });
+
 
 const cartSchema = new mongoose.Schema({
   userId: String,

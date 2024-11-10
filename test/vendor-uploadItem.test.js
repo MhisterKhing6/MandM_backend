@@ -194,6 +194,7 @@ describe("test codes for vendor functions", () => {
     }).save();
     let category = await new CategoriesModel({ name: "electronics" }).save();
     let store = await new StoreModel({
+      location: {coordinates: [6.666600,-1.616271 ] },
       type: category._id,
       storeName: "Afa Papa Accessories",
       storePhone: "+22222222222222",
@@ -244,6 +245,7 @@ describe("test codes for vendor functions", () => {
     let category = await new CategoriesModel({ name: "electronics" }).save();
     let store = await new StoreModel({
       type: category._id,
+      location: {coordinates: [6.666600,-1.616271 ] },
       storeName: "Afa Papa Accessories",
       storePhone: "+22222222222222",
       userId: user._id,
