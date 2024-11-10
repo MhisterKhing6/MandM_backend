@@ -14,7 +14,8 @@ class SocketServices {
     //connection start
     static onConnection = (socket) => {
         //take authentication token
-        const token = socket.handshake.query.token;
+        const token = socket.handshake.auth.token;
+        console.log(token)
         //check if the token is given
         if (!token) {
             socket.disconnect()  //disconnect user
@@ -41,8 +42,8 @@ class SocketServices {
             
             console.log("user is connected")            
         } catch (err) {
+            socket.disconnect()
             console.log(err);
-            return;
         }
 
     }
@@ -50,18 +51,20 @@ class SocketServices {
             socket.on("disconnect", () => {
                 //find key
                 let userId = null;
-                activeUsers.forEach((key, value) => {
-                    if(value.socketId === socket.id)
+                for(const key of activeUsers) {
+                    if(activeUsers[value].socketId === socket.id) {
                         userId = key;
-                })
+                        break;
+                    }
+                }
+                if(userId)
+                    activeUsers.delete(userId);
             } )
-            if(userId)
-                activeUsers.delete(userId);
-            console.log("user disconnected");
+            
     }
 
     //sendOrder
-    static sendOrderNotificationRider = (io, userId, message) => {
+    static sendOrderNotificationRider = async (io, userId) => {
         //get socket id from user id
         let socketId = activeUsers.get(userId); //check if the user is active
         if(socketId) {
@@ -70,11 +73,13 @@ class SocketServices {
     }
     
     //send order rider
-    static sendOrderNotificationVendor = (io, userId, message) => {
+    static sendOrderNotificationVendor = (io, userId, order) => {
+        //message
+        let message = "A new order has been placed orderId " + order._id;
         //get socket id from active users
         let socketId = activeUsers.get(userId); //check if the user is active
         if(socketId) {// if active send
-            io.to(socketId).emit('vendorOrders', { message });
+            io.to(socketId).emit('vendorOrders', { message, order});
         }
     }
     //send private message customer

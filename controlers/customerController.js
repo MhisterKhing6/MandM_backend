@@ -2,6 +2,8 @@ import { ItemSizesModel } from "../models/itemSizes.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
 import { StoreModel } from "../models/stores.js";
+import { SocketServices } from "../services/notification/socketHandler.js";
+import { io } from "../index.js";
 
 class CustomerController{
     static placeOrder = async (req, res)=> {
@@ -45,6 +47,8 @@ class CustomerController{
             //push order
             order.totalPrice = orderTotalPrice;
             pendingProcess.push(order.save())
+            //send sender notification
+            SocketServices.sendOrderNotificationVendor(io, store.userId, order);
         }
         await Promise.all(pendingProcess);
         return res.status(200).json({"message": "order placed successfully"})

@@ -51,4 +51,4 @@ httpServer.listen(port, async () => {
   console.log(`http://localhost:${port}`);
 });
 
-export { app };
+export { httpServer, app, io };
