@@ -9,6 +9,7 @@ import { adminRouter } from "./routes/adminRoute.js";
 import { userRouter } from "./routes/usersRoute.js";
 import { SocketServices } from "./services/notification/socketHandler.js";
 import { customerRouter } from "./routes/customerRoute.js";
+import { dispatcherRoute } from "./routes/dispatcherRoute.js";
 
 const app = express();
 //set up server
@@ -29,6 +30,8 @@ app.use("/api", authenticationRouter);
 app.use("/vendor", vendorRouter);
 
 app.use("/admin", adminRouter);
+
+app.use("/rider", dispatcherRoute);
 
 app.use("/auth", userRouter);
 

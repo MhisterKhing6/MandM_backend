@@ -81,4 +81,10 @@ vendorRouter.delete(
  */
 vendorRouter.get("/store-items/:storeId", VendorController.getStoreItems);
 
+/**
+ * get items
+ */
+vendorRouter.post("/order-status", VendorController.updateOrderStatus);
+
+
 export { vendorRouter };

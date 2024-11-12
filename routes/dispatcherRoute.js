@@ -5,6 +5,7 @@ import {
 } from "../utils/WebTokenController.js";
 import { VendorController } from "../controlers/vendorController.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
+import { DispatcherController } from "../controlers/dispatcherController.js";
 
 const dispatcherRoute = Router();
 
@@ -28,5 +29,7 @@ dispatcherRoute.use(dispatcherMiddleWare);
  * adding store information
  */
 dispatcherRoute.post("/add-store-info", VendorController.addStore);
+//accept or reject order
+dispatcherRoute.post("/order-status", DispatcherController.acceptOrRejectOrder);
 
 export {dispatcherRoute}

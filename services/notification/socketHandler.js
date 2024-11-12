@@ -10,6 +10,8 @@ class SocketServices {
         this.onConnection(socket);
         //disconnection
         this.disConnection(socket);
+        //update drivers information
+        this.updateDriversLocation(socket)
     }
     //connection start
     static onConnection = (socket) => {
@@ -89,6 +91,18 @@ class SocketServices {
         if(socketId) {
             io.to(socketId).emit('customerMessage', { message });
         }
+    }
+    //update driver location 
+    static updateDriversLocation(socket) {
+        socket.on("currentDriverLocation", (details) => {
+            //find driver
+            //finds the user of the particular
+            let driver = activeUsers.get(details.userId);
+            if(driver) {
+                driver.latitude = details.latitude;
+                driver.longitude = details.longitude;
+            }
+        })
     }
 }
 

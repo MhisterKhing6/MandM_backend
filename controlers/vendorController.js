@@ -1,6 +1,7 @@
 import { ItemModel } from "../models/items.js";
 import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
+import { OrderModel } from "../models/orders.js";
 import { StoreModel } from "../models/stores.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import {
@@ -350,6 +351,30 @@ class VendorController {
     }
   };
 
+  //update order status
+  static updateOrderStatus = async(req, res) => {
+    //update the status of an order accepted or rejected
+    let orderDetails = req.body;
+    if(!(orderDetails.orderId && orderDetails.status)) //requires order id and status
+        return res.status(400).json({"message": "status and order id are required"});
+    //get the order 
+    let order = await OrderModel.findById(orderDetails.orderId)
+    //check if order is meant for vendor
+    if(order.vendorId !== req.user._id)
+        return res.status(401).json({"message": "order not authorized"});
+    //updated order status
+    if(orderDetails.status.toLower() === 'accepted'){
+      order.vendorAcceptanceStatus = true;
+      //notify customer if online
+      //select appropriate rider and notify
+    } else {
+      //notify customer order is rejected
+      order.vendorAcceptanceStatus = false;
+    }
+    await order.save()
+    return res.status(200).json({orderId: order._id});
+    
+  }
   static toggleItemSize = async (req, res) => {
     //ensure item id is given
     //check status to see if is enabled or disabled
