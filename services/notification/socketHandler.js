@@ -3,6 +3,7 @@ import { decodeToken } from "../../utils/WebTokenController.js";
 const activeUsers = new Map();
 
 class SocketServices {
+<<<<<<< HEAD
   //start connection
   static socketHandler = (socket) => {
     this.onConnection(socket);
@@ -19,6 +20,15 @@ class SocketServices {
       socket.disconnect(); //disconnect user
       console.log("User not authenticated");
       return;
+=======
+    //start connection
+    static socketHandler = (socket) => {
+        this.onConnection(socket);
+        //disconnection
+        this.disConnection(socket);
+        //update drivers information
+        this.updateDriversLocation(socket)
+>>>>>>> bddba98c627c47f5c5910010ade2b28a5317c325
     }
     //verify user token
     try {
@@ -81,7 +91,22 @@ class SocketServices {
     if (socketId) {
       io.to(socketId).emit("customerMessage", { message });
     }
+<<<<<<< HEAD
   };
+=======
+    //update driver location 
+    static updateDriversLocation(socket) {
+        socket.on("currentDriverLocation", (details) => {
+            //find driver
+            //finds the user of the particular
+            let driver = activeUsers.get(details.userId);
+            if(driver) {
+                driver.latitude = details.latitude;
+                driver.longitude = details.longitude;
+            }
+        })
+    }
+>>>>>>> bddba98c627c47f5c5910010ade2b28a5317c325
 }
 
 export { SocketServices, activeUsers };

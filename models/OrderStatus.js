@@ -1,7 +1,8 @@
 import { Schema, Types, model } from "mongoose";
 
-const OrderStatusOrdSchema = new Schema({
+const OrderRiderStatus = new Schema({
   orderId: { type: Schema.Types.ObjectId, ref: "Store", required: true }, //order id
+<<<<<<< HEAD
   riderId: { type: Schema.Types.ObjectId, required: true }, //rider who picked the order
   status: {
     type: String,
@@ -15,5 +16,12 @@ const OrderStatusOrdSchema = new Schema({
 });
 
 let OrderStatusModel = model("OrderStatus", OrderStatusOrdSchema);
+=======
+  riderId: { type: Schema.Types.ObjectId, required: true },//rider who picked the order
+  status: { type: String, required: true, enum: ["DELIVERED", "PICKED"] }//track order status
+});
 
-export { OrderStatusModel };
+let OrderRiderStatusModel = model("OrderStatus", OrderRiderStatus);
+>>>>>>> bddba98c627c47f5c5910010ade2b28a5317c325
+
+export { OrderRiderStatusModel };
