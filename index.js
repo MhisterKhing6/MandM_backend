@@ -9,11 +9,8 @@ import { adminRouter } from "./routes/adminRoute.js";
 import { userRouter } from "./routes/usersRoute.js";
 import { SocketServices } from "./services/notification/socketHandler.js";
 import { customerRouter } from "./routes/customerRoute.js";
-<<<<<<< HEAD
 import admin from "firebase-admin";
-=======
 import { dispatcherRoute } from "./routes/dispatcherRoute.js";
->>>>>>> bddba98c627c47f5c5910010ade2b28a5317c325
 
 // Initialize Firebase Admin with service account
 import serviceAccount from "./utils/firebase-service-account.json" assert { type: "json" };
