@@ -217,8 +217,10 @@ class UserController {
         : { phoneNumber: loginDetails.id };
     //search for user
     let user = await UserModel.findOne(query).lean();
-    if (!user)
+    if (!user) {
+      updateUserFCMToken(user._id, loginDetails.token);
       return res.status(400).json({ message: "user is not registered" });
+    }
     //check if passwords match
     if (user.password !== sha1(loginDetails.password))
       return res.status(400).json({ message: "wrong user password" });
@@ -363,6 +365,19 @@ class UserController {
   //   await cart.save();
   //   res.json(cart);
   // };
+
+  static updateUserFCMToken = async (req, res) => {
+    const userId = req.user._id;
+    const newToken = req.body;
+    try {
+      await UserModel.findByIdAndUpdate(userId, { fcmToken: newToken });
+
+      console.log("FCM token updated successfully");
+      return res.status(200).json({ message: "Fcm updated successfully" });
+    } catch (error) {
+      console.error("Error updating FCM token:", error);
+    }
+  };
 
   static addToCart = async (req, res) => {
     const { userId, storeId, productId, quantity, price, addons, name } =

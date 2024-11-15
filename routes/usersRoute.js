@@ -22,6 +22,7 @@ userRouter.get("/item-categories", UserController.categories);
 userRouter.get("/stores", UserController.getNearStoresByCategory);
 userRouter.get("/stores/items/:storeId", UserController.getItemsByStoreId);
 userRouter.post("/cart/add", UserController.addToCart);
+userRouter.post("/updatefcmtoken", UserController.updateUserFCMToken);
 userRouter.get("/cart/:userId", UserController.fetchCartItems);
 userRouter.post("/cart/remove", UserController.removeFromCart);
 
