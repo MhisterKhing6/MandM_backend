@@ -1,6 +1,7 @@
 import { ItemModel } from "../models/items.js";
 import { ItemImageModel } from "../models/itemsImages.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
+import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
 import { StoreModel } from "../models/stores.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
@@ -352,18 +353,21 @@ class VendorController {
   };
 
   //update order status
-  static updateOrderStatus = async(req, res) => {
+  static updateOrderStatus = async (req, res) => {
     //update the status of an order accepted or rejected
     let orderDetails = req.body;
-    if(!(orderDetails.orderId && orderDetails.status)) //requires order id and status
-        return res.status(400).json({"message": "status and order id are required"});
-    //get the order 
-    let order = await OrderModel.findById(orderDetails.orderId)
+    if (!(orderDetails.orderId && orderDetails.status))
+      //requires order id and status
+      return res
+        .status(400)
+        .json({ message: "status and order id are required" });
+    //get the order
+    let order = await OrderModel.findById(orderDetails.orderId);
     //check if order is meant for vendor
-    if(order.vendorId !== req.user._id)
-        return res.status(401).json({"message": "order not authorized"});
+    if (order.vendorId !== req.user._id)
+      return res.status(401).json({ message: "order not authorized" });
     //updated order status
-    if(orderDetails.status.toLower() === 'accepted'){
+    if (orderDetails.status.toLower() === "accepted") {
       order.vendorAcceptanceStatus = true;
       //notify customer if online
       //select appropriate rider and notify
@@ -371,10 +375,9 @@ class VendorController {
       //notify customer order is rejected
       order.vendorAcceptanceStatus = false;
     }
-    await order.save()
-    return res.status(200).json({orderId: order._id});
-    
-  }
+    await order.save();
+    return res.status(200).json({ orderId: order._id });
+  };
   static toggleItemSize = async (req, res) => {
     //ensure item id is given
     //check status to see if is enabled or disabled
@@ -522,6 +525,133 @@ class VendorController {
     } catch (err) {
       console.log(err);
       return res.status(500).json({ message: "internal error" });
+    }
+  };
+
+  static getVendorOrders = async (req, res) => {
+    try {
+      // Ensure the user is authenticated and is a vendor
+      const vendorId = req.user._id; // Assuming req.user contains the authenticated vendor's details
+
+      // Fetch orders for the vendor
+      const orders = await OrderModel.find({ vendorId })
+        .populate("customerId", "name email") // Include customer details (e.g., name and email)
+        // .populate("ItemSizes") // Include details about order items
+        // .populate("storeId", "name") // Include store name
+        .sort({ createdAt: -1 }) // Sort by most recent orders
+        .lean();
+
+      if (!orders || orders.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No orders found for this vendor" });
+      }
+      const orderIds = orders.map((order) => order._id);
+      const orderItems = await OrderItemModel.find({
+        orderId: { $in: orderIds },
+      })
+        .populate({
+          path: "itemSizeId",
+          select: "name itemId",
+          populate: {
+            path: "itemId",
+            select: "name",
+          },
+        })
+        // .populate("itemSizeId", "name price") // Populate item size details
+        .lean();
+      // const orderItemsMap = orderItems.reduce((acc, item) => {
+      //   acc[item.orderId] = acc[item.orderId] || [];
+      //   acc[item.orderId].push(item);
+      //   return acc;
+      // }, {});
+
+      // const enrichedOrders = orders.map((order) => ({
+      //   ...order,
+      //   items: orderItemsMap[order._id] || [],
+      // }));
+
+      // return res.status(200).json(enrichedOrders);
+      const orderItemsMap = orderItems.reduce((acc, item) => {
+        acc[item.orderId] = acc[item.orderId] || [];
+        acc[item.orderId].push(item);
+        return acc;
+      }, {});
+
+      const enrichedOrders = orders.map((order) => ({
+        ...order,
+        items: orderItemsMap[order._id] || [],
+      }));
+
+      // Group by date
+      const groupedOrders = enrichedOrders.reduce((acc, order) => {
+        const date = new Date(order.createdAt).toISOString().split("T")[0]; // Extract date part
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(order);
+        return acc;
+      }, {});
+
+      return res.status(200).json(groupedOrders);
+      // return res.status(200).json({ orderItems });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching orders" });
+    }
+  };
+
+  static getRecentVendorOrders = async (req, res) => {
+    try {
+      const vendorId = req.user._id; // Assuming req.user contains the authenticated vendor's details
+
+      // Define the number of recent orders to fetch
+      const limit = parseInt(req.query.limit, 10) || 5; // Default to 5 if no limit is provided
+
+      // Fetch recent orders for the vendor
+      const orders = await OrderModel.find({ vendorId })
+        .populate("customerId", "name email") // Include customer details
+        .sort({ createdAt: -1 }) // Sort by most recent orders
+        .limit(limit) // Limit to the top `n` recent orders
+        .lean();
+
+      if (!orders || orders.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No orders found for this vendor" });
+      }
+
+      const orderIds = orders.map((order) => order._id);
+
+      // Fetch items related to the recent orders
+      const orderItems = await OrderItemModel.find({
+        orderId: { $in: orderIds },
+      })
+        .populate({
+          path: "itemSizeId",
+          select: "name itemId",
+          populate: {
+            path: "itemId",
+            select: "name",
+          },
+        })
+        .lean();
+
+      // Map items to their respective orders
+      const orderItemsMap = orderItems.reduce((acc, item) => {
+        acc[item.orderId] = acc[item.orderId] || [];
+        acc[item.orderId].push(item);
+        return acc;
+      }, {});
+
+      // Enrich orders with their items
+      const enrichedOrders = orders.map((order) => ({
+        ...order,
+        items: orderItemsMap[order._id] || [],
+      }));
+
+      return res.status(200).json(enrichedOrders);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching recent orders" });
     }
   };
 }
