@@ -3,6 +3,7 @@ import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
 import { StoreModel } from "../models/stores.js";
 import sendNewOrderNotification from "../utils/notificationHandler.js";
+import { UserController } from "./userController.js";
 
 class CustomerController {
   static placeOrder = async (req, res) => {
@@ -71,6 +72,7 @@ class CustomerController {
         //push order
         order.totalPrice = orderTotalPrice;
         pendingProcess.push(order.save());
+        await sendNewOrderNotification(store.userId, mainOrder)
       }
       await Promise.all(pendingProcess);
       for (let storeOrder of ordersDetails) {
@@ -85,6 +87,10 @@ class CustomerController {
       return res.status(501).json({ message: "error occurred" });
     }
   };
+  static orderStatus = async (req, res) => {
+    //returns the vendor status of an order
+      return UserController.getOrderStatus("customer", req, res)
+  } 
 }
 
 export { CustomerController };

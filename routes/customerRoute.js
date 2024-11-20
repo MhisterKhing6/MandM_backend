@@ -32,4 +32,10 @@ place order
 */
 customerRouter.post("/order", CustomerController.placeOrder);
 
+/*
+place order status
+
+*/
+customerRouter.get("/order/status/:orderId", CustomerController.orderStatus);
+
 export { customerRouter };

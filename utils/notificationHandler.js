@@ -9,11 +9,11 @@ const sendNewOrderNotification = async (vendorId, orderDetails) => {
       token: vendorToken,
       notification: {
         title: "New Order Received!",
-        body: `Order #122333 has been placed.`,
+        body: `Order ${orderDetails._id} has been placed.`,
       },
       data: {
-        orderId: "#45566",
-        orderStatus: "pending order",
+        orderId: `${orderDetails._id}`,
+        orderStatus: `${orderDetails.vendorStatus}`,
       },
     };
 

@@ -87,4 +87,16 @@ vendorRouter.get("/store-items/:storeId", VendorController.getStoreItems);
 vendorRouter.post("/order-status", VendorController.updateOrderStatus);
 
 vendorRouter.get("/orders", VendorController.getVendorOrders);
+
+/**
+ * get orders
+ */
+vendorRouter.get("/order/status/:orderId", VendorController.orderStatus);
+
+/**
+ * get orders
+ */
+vendorRouter.get("/recent/orders", VendorController.pendingOrdersRecent);
+
+
 export { vendorRouter };

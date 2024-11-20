@@ -16,6 +16,9 @@ import { StoreModel } from "../models/stores.js";
 import { CategoriesModel } from "../models/categories.js";
 import Cart from "../models/cart.js";
 import { ItemModel } from "../models/items.js";
+import { OrderItemModel } from "../models/orderItems.js";
+import { OrderModel } from "../models/orders.js";
+import { OrderRiderStatusModel } from "../models/OrderStatus.js";
 class UserController {
   //register user functions
   static register = async (req, res) => {
@@ -497,6 +500,16 @@ class UserController {
       res.status(500).json({ error: "Failed to fetch cart items" });
     }
   };
+
+  static getOrderStatus = async (type, req, res) =>{
+    let orderId = req.params.orderId
+    let orderDetails = (type === "rider")? await OrderRiderStatusModel.findOne({orderId}).lean() : await OrderModel.findById(orderId).lean();
+    if(!orderDetails)
+        return res.status(400).jso({"message": "wrong order"});
+    let status = (type === "rider") ? orderDetails.status : (type === "vendor") ? orderDetails.vendorStatus : orderDetails.customerStatus;
+
+    return res.status(200).json({status})
+  }
 }
 export { UserController };
 

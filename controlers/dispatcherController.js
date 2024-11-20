@@ -23,6 +23,11 @@ class DispatcherController {
         }
         return res.status(200).json();
     }
+
+    static orderStatus = async (req, res) => {
+        //returns the vendor status of an order
+          return UserController.getOrderStatus("rider", req, res)
+      } 
 }
 
 export {DispatcherController}

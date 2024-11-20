@@ -32,4 +32,9 @@ dispatcherRoute.post("/add-store-info", VendorController.addStore);
 //accept or reject order
 dispatcherRoute.post("/order-status", DispatcherController.acceptOrRejectOrder);
 
+/**
+ * get orders
+ */
+dispatcherRoute.get("/order/status/:orderId", DispatcherController.orderStatus);
+
 export {dispatcherRoute}

@@ -11,6 +11,7 @@ import {
   saveUploadFileDisk,
 } from "../utils/FileHandler.js";
 import path from "path";
+import { UserController } from "./userController.js";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -362,22 +363,29 @@ class VendorController {
         .status(400)
         .json({ message: "status and order id are required" });
     //get the order
+    if(!["ACCEPTED", "REJECTED"].includes(orderDetails.status.toUpperCase()))
+      return res.status(400).json({message: "The order status can either be ACCEPTED or REJECTED"})
     let order = await OrderModel.findById(orderDetails.orderId);
     //check if order is meant for vendor
     if (order.vendorId !== req.user._id)
       return res.status(401).json({ message: "order not authorized" });
     //updated order status
-    if (orderDetails.status.toLower() === "accepted") {
-      order.vendorAcceptanceStatus = true;
-      //notify customer if online
-      //select appropriate rider and notify
+    if (orderDetails.status.toUpperCase() === "ACCEPTED") {
+      //update notification accordingly
+      order.vendorStatus = "ACCEPTED"
+      order.customerStatus = "APPROVED";
+      //Find Rider by algorithm
+
+      //notify the customer
     } else {
       //notify customer order is rejected
-      order.vendorAcceptanceStatus = false;
+      order.vendorAcceptanceStatus = "REJECTED"
+      order.customerStatus = "APPROVED";
     }
     await order.save();
     return res.status(200).json({ orderId: order._id });
   };
+
   static toggleItemSize = async (req, res) => {
     //ensure item id is given
     //check status to see if is enabled or disabled
@@ -654,6 +662,26 @@ class VendorController {
       return res.status(500).json({ message: "Error fetching recent orders" });
     }
   };
+
+  static orderStatus = async (req, res) => {
+    //returns the vendor status of an order
+      return UserController.getOrderStatus("vendor", req, res)
+  }
+
+  //get recent pending orders
+  static pendingOrdersRecent = async(req, res) => {
+    let pendingOrders = OrderItemModel.find({vendorStatus: "PENDING"}).populate("customerId").limit(10).lean();
+    for(order of pendingOrders) {
+      let orderItems = await OrderItemModel.find({orderId: order._id}).populate("itemSizeId").select("-_v").lean();
+      //find the images and attach
+      let images = await ItemImageModel.find({itemId: orderItems.itemSizeId.itemId});
+      orderItems.itemSizeId.itemImages = images;
+      order.orderItems = orderItems;
+    }
+    return res.status(200).json(pendingOrders);
+  }
+
+  
 }
 
 // Import necessary modules
