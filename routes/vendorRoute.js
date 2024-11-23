@@ -97,6 +97,6 @@ vendorRouter.get("/order/status/:orderId", VendorController.orderStatus);
  * get orders
  */
 vendorRouter.get("/recent/orders", VendorController.pendingOrdersRecent);
-
+vendorRouter.get("/recent/order", VendorController.getRecentVendorOrders);
 
 export { vendorRouter };

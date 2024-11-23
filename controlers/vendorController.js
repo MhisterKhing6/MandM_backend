@@ -363,8 +363,10 @@ class VendorController {
         .status(400)
         .json({ message: "status and order id are required" });
     //get the order
-    if(!["ACCEPTED", "REJECTED"].includes(orderDetails.status.toUpperCase()))
-      return res.status(400).json({message: "The order status can either be ACCEPTED or REJECTED"})
+    if (!["ACCEPTED", "REJECTED"].includes(orderDetails.status.toUpperCase()))
+      return res.status(400).json({
+        message: "The order status can either be ACCEPTED or REJECTED",
+      });
     let order = await OrderModel.findById(orderDetails.orderId);
     //check if order is meant for vendor
     if (order.vendorId !== req.user._id)
@@ -372,14 +374,14 @@ class VendorController {
     //updated order status
     if (orderDetails.status.toUpperCase() === "ACCEPTED") {
       //update notification accordingly
-      order.vendorStatus = "ACCEPTED"
+      order.vendorStatus = "ACCEPTED";
       order.customerStatus = "APPROVED";
       //Find Rider by algorithm
 
       //notify the customer
     } else {
       //notify customer order is rejected
-      order.vendorAcceptanceStatus = "REJECTED"
+      order.vendorAcceptanceStatus = "REJECTED";
       order.customerStatus = "APPROVED";
     }
     await order.save();
@@ -665,23 +667,30 @@ class VendorController {
 
   static orderStatus = async (req, res) => {
     //returns the vendor status of an order
-      return UserController.getOrderStatus("vendor", req, res)
-  }
+    return UserController.getOrderStatus("vendor", req, res);
+  };
 
   //get recent pending orders
-  static pendingOrdersRecent = async(req, res) => {
-    let pendingOrders = OrderItemModel.find({vendorStatus: "PENDING"}).populate("customerId").limit(10).lean();
-    for(order of pendingOrders) {
-      let orderItems = await OrderItemModel.find({orderId: order._id}).populate("itemSizeId").select("-_v").lean();
+  static pendingOrdersRecent = async (req, res) => {
+    let pendingOrders = OrderItemModel.find({ vendorStatus: "PENDING" })
+      .populate("customerId")
+      .limit(10)
+      .lean();
+    console.log(pendingOrders);
+    for (order of pendingOrders) {
+      let orderItems = await OrderItemModel.find({ orderId: order._id })
+        .populate("itemSizeId")
+        .select("-_v")
+        .lean();
       //find the images and attach
-      let images = await ItemImageModel.find({itemId: orderItems.itemSizeId.itemId});
+      let images = await ItemImageModel.find({
+        itemId: orderItems.itemSizeId.itemId,
+      });
       orderItems.itemSizeId.itemImages = images;
       order.orderItems = orderItems;
     }
     return res.status(200).json(pendingOrders);
-  }
-
-  
+  };
 }
 
 // Import necessary modules
