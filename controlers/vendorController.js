@@ -378,7 +378,7 @@ class VendorController {
       //Find Rider by algorithm
       let availableRiders = await findAvailableRiders(order.address.coordinates[0], order.address.coordinates[0]);
       if(availableRiders.length === 0) {
-        //do something
+        //inform admin
       } else {
         let selectedRider = availableRiders[0];
         //send notification to rider
