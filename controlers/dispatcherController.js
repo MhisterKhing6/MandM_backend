@@ -2,6 +2,8 @@ import { OrderModel } from "../models/orders.js";
 import { OrderRiderStatusModel } from "../models/OrderStatus.js";
 import { activeUsers } from "../services/notification/socketHandler.js";
 import { findAvailableRiders, setRiderStatus } from "../utils/redisStorage.js";
+import { SocketServices } from "../services/notification/socketHandler.js";
+import { io } from "../index.js";
 
 class DispatcherController {
     
@@ -41,6 +43,7 @@ class DispatcherController {
                 } else {
                     //check for the position and assign
                     nextAvailableDriver = rejectedRiderPos === 0 ? availableRiders[1] : availableRiders[rejectedRiderPos - 1];
+                    SocketServices.sendOrderNotificationRider(io, nextAvailableDriver.userId, {address:order.address, orderId:order._id.toString()})
                     //send notification to the next available driver;
                 }
             }

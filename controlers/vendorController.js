@@ -13,6 +13,8 @@ import {
 import path from "path";
 import { UserController } from "./userController.js";
 import { findAvailableRiders } from "../utils/redisStorage.js";
+import { SocketServices } from "../services/notification/socketHandler.js";
+import { io } from "../index.js";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -368,8 +370,8 @@ class VendorController {
       return res.status(400).json({message: "The order status can either be ACCEPTED or REJECTED"})
     let order = await OrderModel.findById(orderDetails.orderId);
     //check if order is meant for vendor
-    if (order.vendorId !== req.user._id)
-      return res.status(401).json({ message: "vendor not authorized" });
+    if (order.vendorId.toString() !== req.user._id.toString())
+        return res.status(401).json({ message: "vendor not authorized" });
     //updated order status
     if (orderDetails.status.toUpperCase() === "ACCEPTED") {
       //update notification accordingly
@@ -381,7 +383,7 @@ class VendorController {
         //inform admin
       } else {
         let selectedRider = availableRiders[0];
-        //send notification to rider
+        SocketServices.sendOrderNotificationRider(io, selectedRider.userId, {address:order.address, orderId:order._id.toString()})
       }
     } else {
       //notify customer order is rejected

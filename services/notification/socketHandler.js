@@ -1,5 +1,5 @@
 import { UserModel } from "../../models/user.js";
-import { deleteActiveMember, getUserIdfromSocket, setRiderStatus, storeActiveMember, storeRiderLocation } from "../../utils/redisStorage.js";
+import { deleteActiveMember, getActiveMember, getUserIdfromSocket, setRiderStatus, storeActiveMember, storeRiderLocation } from "../../utils/redisStorage.js";
 import { decodeToken } from "../../utils/WebTokenController.js";
 // Active Riders
 const activeUsers = new Map();
@@ -90,11 +90,11 @@ class SocketServices {
     }
   }
   //sendOrder
-  static sendOrderNotificationRider = async (io, userId) => {
+  static sendOrderNotificationRider = async (io, userId, order) => {
     //get socket id from user id
-    let socketId = activeUsers.get(userId); //check if the user is active
-    if (socketId) {
-      io.to(socketId).emit("riderOrder", { message });
+    let activeRider = getActiveMember(userId,"dispatcher"); //check if the user is active
+    if (activeRider) {
+      io.to(activeRider.socketId).emit("riderOrder", { order });
     }
   };
 
@@ -120,8 +120,7 @@ class SocketServices {
 
   //update driver location
   static updateDriversLocation(socket) {
-    socket.on("currentDriverLocation", async (details) => { //{userId:latitude, longitude}
-      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    socket.on("currentDriverLocation", async (details) => { //{userId, latitude, longitude}
       //find driver
       //finds the user of the particular
       let user = await UserModel.findById(details.userId).lean();

@@ -42,7 +42,9 @@ describe('Socket.IO httpServer tests', function () {
             // some additional context, for example the XMLHttpRequest object
             console.log(err.context);
           });
-         
+         clientSocket.on("reconnect", () => {
+            clientSocket.emit("setDetails")
+         })
     });
 
     // Close the httpServer after tests
