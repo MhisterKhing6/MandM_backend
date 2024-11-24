@@ -12,6 +12,7 @@ import {
 } from "../utils/FileHandler.js";
 import path from "path";
 import { UserController } from "./userController.js";
+import { findAvailableRiders } from "../utils/redisStorage.js";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -369,21 +370,36 @@ class VendorController {
       });
     let order = await OrderModel.findById(orderDetails.orderId);
     //check if order is meant for vendor
-    if (order.vendorId !== req.user._id)
-      return res.status(401).json({ message: "order not authorized" });
-    //updated order status
+    // console.log(req.user._id.toString());
+    console.log(order.vendorId);
+    const objectId = req.user._id;
+    console.log(objectId.toString());
+    const vendorIdObj = order.vendorId;
+    const vendorId = vendorIdObj.toString();
+    console.log(vendorId);
+    if (vendorId !== objectId)
+      return res.status(401).json({ message: "vendor not authorized" });
     if (orderDetails.status.toUpperCase() === "ACCEPTED") {
       //update notification accordingly
       order.vendorStatus = "ACCEPTED";
       order.customerStatus = "APPROVED";
       //Find Rider by algorithm
-
-      //notify the customer
+      let availableRiders = await findAvailableRiders(
+        order.address.coordinates[0],
+        order.address.coordinates[0]
+      );
+      if (availableRiders.length === 0) {
+        //inform admin
+      } else {
+        let selectedRider = availableRiders[0];
+        //send notification to rider
+      }
     } else {
       //notify customer order is rejected
       order.vendorAcceptanceStatus = "REJECTED";
       order.customerStatus = "APPROVED";
     }
+    //notify customer
     await order.save();
     return res.status(200).json({ orderId: order._id });
   };
