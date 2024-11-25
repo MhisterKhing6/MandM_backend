@@ -378,12 +378,12 @@ class VendorController {
       order.vendorStatus = "ACCEPTED"
       order.customerStatus = "APPROVED";
       //Find Rider by algorithm
-      let availableRiders = await findAvailableRiders(order.address.coordinates[0], order.address.coordinates[0]);
+      let availableRiders = await findAvailableRiders(order.address.coordinates[0], order.address.coordinates[1]);
       if(availableRiders.length === 0) {
         //inform admin
       } else {
         let selectedRider = availableRiders[0];
-        SocketServices.sendOrderNotificationRider(io, selectedRider.userId, {address:order.address, orderId:order._id.toString()})
+        SocketServices.sendOrderNotificationRider(io, selectedRider.riderId, {address:order.address, orderId:order._id.toString()})
       }
     } else {
       //notify customer order is rejected

@@ -92,7 +92,7 @@ class SocketServices {
   //sendOrder
   static sendOrderNotificationRider = async (io, userId, order) => {
     //get socket id from user id
-    let activeRider = getActiveMember(userId,"dispatcher"); //check if the user is active
+    let activeRider = await getActiveMember(userId,"dispatcher"); //check if the user is active
     if (activeRider) {
       io.to(activeRider.socketId).emit("riderOrder", { order });
     }
