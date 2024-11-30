@@ -13,6 +13,8 @@ import {
 import path from "path";
 import { UserController } from "./userController.js";
 import { findAvailableRiders } from "../utils/redisStorage.js";
+import { SocketServices } from "../services/notification/socketHandler.js";
+import { io } from "../index.js";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -386,13 +388,18 @@ class VendorController {
       //Find Rider by algorithm
       let availableRiders = await findAvailableRiders(
         order.address.coordinates[0],
-        order.address.coordinates[0]
+        order.address.coordinates[1]
       );
       if (availableRiders.length === 0) {
         //inform admin
+        console.log("No rider was assigned");
       } else {
         let selectedRider = availableRiders[0];
-        //send notification to rider
+        SocketServices.sendOrderNotificationRider(io, selectedRider.riderId, {
+          address: order.address,
+          orderId: order._id.toString(),
+        });
+        console.log("Seeeen");
       }
     } else {
       //notify customer order is rejected

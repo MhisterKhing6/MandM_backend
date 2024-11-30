@@ -1,6 +1,7 @@
 import { UserModel } from "../../models/user.js";
 import {
   deleteActiveMember,
+  getActiveMember,
   getUserIdfromSocket,
   setRiderStatus,
   storeActiveMember,
@@ -95,12 +96,14 @@ class SocketServices {
     }
   }
   //sendOrder
-  static sendOrderNotificationRider = async (io, userId) => {
+  static sendOrderNotificationRider = async (io, userId, order) => {
     //get socket id from user id
-    let socketId = activeUsers.get(userId); //check if the user is active
-    if (socketId) {
-      io.to(socketId).emit("riderOrder", { message });
+    let activeRider = await getActiveMember(userId, "dispatcher"); //check if the user is active
+    if (activeRider) {
+      console.log(activeRider);
+      io.to(activeRider.socketId).emit("riderOrder", { order });
     }
+    console.log("Herrrrrrr");
   };
 
   //send order rider
@@ -126,10 +129,7 @@ class SocketServices {
   //update driver location
   static updateDriversLocation(socket) {
     socket.on("currentDriverLocation", async (details) => {
-      //{userId:latitude, longitude}
-      // console.log(
-      //   ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-      // );
+      //{userId, latitude, longitude}
       //find driver
       //finds the user of the particular
       // console.log(details);

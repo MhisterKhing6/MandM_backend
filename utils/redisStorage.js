@@ -33,7 +33,7 @@ async function findAvailableRiders(lat, lon, radius = 1000) {
     const status = await redis.hget("riderStatus", riderId);
 
     // If the rider is available, construct the full entry
-    if (status === "available") {
+    if (status.toString() === "1") {
       const location = await redis.geopos("activeRiders", riderId); // Get rider's location (lat, lon)
       availableRiders.push({
         riderId,

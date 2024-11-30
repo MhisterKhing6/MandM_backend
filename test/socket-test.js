@@ -21,12 +21,45 @@ describe("Socket.IO httpServer tests", function () {
     role: "dispatcher",
   };
 
+<<<<<<< HEAD
   before(async () => {
     await UserModel.deleteMany();
     // We already imported the httpServer, so it will start automatically
     await httpServer.close();
     await httpServer.listen(8000, () => {
       console.log("Test httpServer running on http://localhost:8000");
+=======
+    before(async () => {
+        await UserModel.deleteMany();
+        // We already imported the httpServer, so it will start automatically
+        await httpServer.close()
+        await httpServer.listen(8000, () => {
+            console.log('Test httpServer running on http://localhost:8000');
+        });
+        userModel = await new UserModel(user).save()
+        let data = {id:user.email, password:"password"};
+        let response = await request(httpServer)
+        .post("/api/login")
+        .send(data)
+        .set("Accept", "application/json")
+        .set("content-type", "application/json");
+        user.token = response.body.token;
+        // Create a client socket and connect
+        clientSocket = socketClient('http://localhost:8000', {auth:{token:user.token}});
+        clientSocket.on("connect_error", (err) => {
+            // the reason of the error, for example "xhr poll error"
+            console.log(err.message);
+          
+            // some additional description, for example the status code of the initial HTTP response
+            console.log(err.description);
+          
+            // some additional context, for example the XMLHttpRequest object
+            console.log(err.context);
+          });
+         clientSocket.on("reconnect", () => {
+            clientSocket.emit("setDetails")
+         })
+>>>>>>> 679e7eaf00272030fd6b836091014a687278ef82
     });
     userModel = await new UserModel(user).save();
     let data = { id: user.email, password: "password" };
