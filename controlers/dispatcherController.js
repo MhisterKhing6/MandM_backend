@@ -1,7 +1,7 @@
 import { OrderModel } from "../models/orders.js";
 import { OrderRiderStatusModel } from "../models/OrderStatus.js";
 import { activeUsers } from "../services/notification/socketHandler.js";
-import { findAvailableRiders, setRiderStatus } from "../utils/redisStorage.js";
+import { findAvailableRiders, getRiderStatus, setRiderStatus } from "../utils/redisStorage.js";
 import { SocketServices } from "../services/notification/socketHandler.js";
 import { io } from "../index.js";
 
@@ -13,7 +13,7 @@ class DispatcherController {
         if(!(details.orderId && details.status))
             return res.status(400).json({"message": "order status required"});
         //fetch order
-        if(!["PENDING" , "DELIVERED", "PICKED", "ACCEPTED", "REJECTED"].includes(details.status.toUpperCase()))
+        if(!["PENDING" , "DELIVERED", "PICKED", "ACCEPTED", "REJECTED", "CANCELLED"].includes(details.status.toUpperCase()))
             return res.status(400).json({message: "wrong status element"});
         let order = await OrderModel.findById(details.order);
         if(!order)
@@ -67,7 +67,23 @@ class DispatcherController {
     static orderStatus = async (req, res) => {
         //returns the vendor status of an order
           return UserController.getOrderStatus("rider", req, res)
-      } 
+      }
+    //details status
+    static changeAvailability = async (req, res) => {
+        ///change rider toggle rider availability
+        //check for status availablity
+        let details = req.body
+        if(!(details.stat || details.status !== "0" || details.status !== "1"))
+            return res.status(400).json({message: "The status of the order should be 1 or 0, 1 means one and zero means off. they should be string"});
+        await setRiderStatus(req.user._id.toString(), details.status)
+        return res.status(200).json({message:st})
+        
+    }
+    //
+    static getAvailabilityStatus = async (req, res) => {
+        let orderStatus = getRiderStatus(req.user._id.toString());
+        return res.status(200).json({status: orderStatus ? orderStatus : "0"});
+    }
 }
 
 export {DispatcherController}
