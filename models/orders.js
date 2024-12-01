@@ -6,7 +6,7 @@ const OrderSchema = new Schema({
   storeId: { type: Schema.Types.ObjectId, ref: "Store", required: true },
   vendorId: { type: Schema.Types.ObjectId, ref: "Users", required: true },
   vendorStatus: { type: String, enum: ["PENDING", "ACCEPTED", "REJECTED", "COMPLETED"], default:"PENDING"},//track order status
-  customerStatus: { type: String, enum: ["PENDING", "APPROVED","PICKED", "REJECTED", "DELIVERED"], default:"PENDING"},
+  customerStatus: { type: String, enum: ["PENDING", "APPROVED","PICKED", "REJECTED", "DELIVERED", "CANCELLED"], default:"PENDING"},
   address: {
     type: { type: String, default: "Point" },
     coordinates: { type: [Number], required: true }, // [longitude, latitude]

@@ -38,4 +38,9 @@ place order status
 */
 customerRouter.get("/order/status/:orderId", CustomerController.orderStatus);
 
+/*
+get status
+*/
+customerRouter.post("/cancel-order", CustomerController.cancelOrder)
+
 export { customerRouter };

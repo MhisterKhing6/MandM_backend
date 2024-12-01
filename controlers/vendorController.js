@@ -15,6 +15,7 @@ import { UserController } from "./userController.js";
 import { findAvailableRiders } from "../utils/redisStorage.js";
 import { SocketServices } from "../services/notification/socketHandler.js";
 import { io } from "../index.js";
+import { PaymentVendorModel } from "../models/paymentStore.js";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -40,6 +41,8 @@ class VendorController {
       return res.status(400).json({ message: "not all fields given" });
     //save store information
     try {
+      //store payment
+
       const newStore = new StoreModel({
         userId: req.user._id,
         storeName: store.storeName,
@@ -51,6 +54,12 @@ class VendorController {
         },
         type: store.type,
       });
+      let payment = await new PaymentVendorModel({
+        storeId: newStore._id,
+        amount: 0,
+        userId: req.user._id,
+      }).save();
+      newStore.payment = payment._id;
       await newStore.save();
       return res.status(200).json({ message: "store successfully added" });
     } catch (err) {
@@ -489,6 +498,7 @@ class VendorController {
     //returns the stores of the user
     let stores = await StoreModel.find({ userId: req.user._id })
       .populate({ path: "type", select: "name _id" })
+      .populate("payment")
       .lean();
     return res.status(200).json(stores);
   };
@@ -713,6 +723,31 @@ class VendorController {
       order.orderItems = orderItems;
     }
     return res.status(200).json(pendingOrders);
+  };
+
+  //get payment store
+  static paymentStore = async (req, res) => {
+    let storeId = req.params.storeId;
+    try {
+      let paymentStore = await PaymentVendorModel.findOne({ storeId }).lean();
+      if (!paymentStore)
+        return res.status(400).json({ message: "cant find store" });
+      return res.status(200).json(paymentStore);
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ message: "internal error" });
+    }
+  };
+
+  //get payment vendorId
+  static paymentVendor = async (req, res) => {
+    try {
+      let vendorId = req.params.vendorId;
+      return await PaymentVendorModel.find({ userId: vendorId }).lean();
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ message: "wrong vendor id" });
+    }
   };
 }
 

@@ -4,6 +4,7 @@ import { Schema, model } from "mongoose";
 
 const Store = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  payment: { type: Schema.Types.ObjectId, ref: "PaymentVendor", required: true },
   storeName: { type: String, required: true },
   storeAddress: { type: String },
   storePhone: { type: String, required: true },

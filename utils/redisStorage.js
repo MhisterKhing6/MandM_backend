@@ -15,6 +15,11 @@ async function setRiderStatus(riderId, status) {
   console.log(`Rider ${riderId} status set to ${status}.`);
 }
 
+async function getRiderStatus(riderId) {
+  console.log("Hey");
+  console.log(await redis.hget("riderStatus", riderId));
+  return await redis.hget("riderStatus", riderId); //"1":available, "0":"false"
+}
 // Find available riders within a given radius
 async function findAvailableRiders(lat, lon, radius = 1000) {
   const riders = await redis.georadius(
@@ -134,5 +139,6 @@ export {
   reverseSocket,
   getAllActiveMembers,
   getUserIdfromSocket,
+  getRiderStatus,
   redis,
 };

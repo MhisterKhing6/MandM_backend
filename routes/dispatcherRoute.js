@@ -37,4 +37,16 @@ dispatcherRoute.post("/order-status", DispatcherController.acceptOrRejectOrder);
  */
 dispatcherRoute.get("/order/status/:orderId", DispatcherController.orderStatus);
 
+/**
+ * toggle  rider status
+ */
+dispatcherRoute.post('/toggle/availability-status', DispatcherController.changeAvailability)
+
+/**
+ * get rider status
+ */
+dispatcherRoute.get("/rider/status", DispatcherController.getAvailabilityStatus);
+
+
+
 export {dispatcherRoute}
