@@ -75,14 +75,19 @@ class CustomerController {
         order.totalPrice = orderTotalPrice;
         pendingProcess.push(order.save());
         //find store payment
-        let storePayment = await PaymentVendorModel.findOne({storeId:storeOrder.storeId});
-        if(storePayment) 
-          storePayment += orderTotalPrice;
-        else 
-          storePayment = new PaymentVendorModel({storeId:storeOrder.storeId, userId:store.userId, amount:orderTotalPrice})
-        
-          pendingProcess.push(storePayment.save())
-        await sendNewOrderNotification(store.userId, mainOrder)
+        let storePayment = await PaymentVendorModel.findOne({
+          storeId: storeOrder.storeId,
+        });
+        if (storePayment) storePayment += orderTotalPrice;
+        else
+          storePayment = new PaymentVendorModel({
+            storeId: storeOrder.storeId,
+            userId: store.userId,
+            amount: orderTotalPrice,
+          });
+
+        pendingProcess.push(storePayment.save());
+        await sendNewOrderNotification(store.userId, mainOrder);
       }
       await Promise.all(pendingProcess);
       for (let storeOrder of ordersDetails) {
@@ -99,35 +104,30 @@ class CustomerController {
   };
   static orderStatus = async (req, res) => {
     //returns the vendor status of an order
-      return UserController.getOrderStatus("customer", req, res)
-  }
-  //cancel order 
-  static cancelOrder  = async (req, res) => {
+    return UserController.getOrderStatus("customer", req, res);
+  };
+  //cancel order
+  static cancelOrder = async (req, res) => {
     //cancel order
-    let orderId = req.body.orderId
-    if(!orderId) {
-      return res.status(400).json({message: "order id required"})
+    let orderId = req.body.orderId;
+    if (!orderId) {
+      return res.status(400).json({ message: "order id required" });
     }
     //find order status
-    let order = await OrderModel.findById({orderId});
-    if(!order) {
-      return res.status(400).json({message:"cant find order"})
+    let order = await OrderModel.findById({ orderId });
+    if (!order) {
+      return res.status(400).json({ message: "cant find order" });
     }
     order.customerStatus = "CANCELLED";
-    await order.save()
+    await order.save();
     //update the order rider status too
-    let orderRider = await OrderRiderStatusModel.findOne({orderId})
-    if(orderRider) {
+    let orderRider = await OrderRiderStatusModel.findOne({ orderId });
+    if (orderRider) {
       orderRider.status = "CANCELLED";
-      await orderRider.save()
+      await orderRider.save();
     }
-    return res.status(200).json({"message": "cancelled"})
-
-  }
+    return res.status(200).json({ message: "cancelled" });
+  };
 }
-
-
-
-
 
 export { CustomerController };
