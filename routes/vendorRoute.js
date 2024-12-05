@@ -97,14 +97,12 @@ vendorRouter.get("/order/status/:orderId", VendorController.orderStatus);
  * get orders
  */
 vendorRouter.get("/recent/orders", VendorController.pendingOrdersRecent);
-vendorRouter.get("/recent/order", VendorController.getRecentVendorOrders);
 
 /**
  * get payment of vendor store
  */
 vendorRouter.get("/payment/:storeId", VendorController.paymentStore);
 
-//get payment vendor
-vendorRouter.get("/payment/vendor", VendorController.paymentVendor);
+
 
 export { vendorRouter };

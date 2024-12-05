@@ -5,6 +5,8 @@ const OrderSchema = new Schema({
   totalPrice: { type: Schema.Types.Number, required: true }, //rider who picked the order
   storeId: { type: Schema.Types.ObjectId, ref: "Store", required: true },
   vendorId: { type: Schema.Types.ObjectId, ref: "Users", required: true },
+  deliveryCost: {type:Schema.Types.Number, required:true},
+  itemCost: {type:Schema.Types.Number, required:true},
   vendorStatus: { type: String, enum: ["PENDING", "ACCEPTED", "REJECTED", "COMPLETED"], default:"PENDING"},//track order status
   customerStatus: { type: String, enum: ["PENDING", "APPROVED","PICKED", "REJECTED", "DELIVERED", "CANCELLED"], default:"PENDING"},
   address: {

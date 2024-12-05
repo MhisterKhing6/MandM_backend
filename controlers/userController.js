@@ -254,7 +254,7 @@ class UserController {
 
   static getNearStoresByCategory = async (req, res) => {
     try {
-      const { longitude, latitude, maxDistance = 5000 } = req.query;
+      const { longitude, latitude, maxDistance = 500000 } = req.query;
 
       if (!longitude || !latitude) {
         return res
@@ -501,22 +501,15 @@ class UserController {
     }
   };
 
-  static getOrderStatus = async (type, req, res) => {
-    let orderId = req.params.orderId;
-    let orderDetails =
-      type === "rider"
-        ? await OrderRiderStatusModel.findOne({ orderId }).lean()
-        : await OrderModel.findById(orderId).lean();
-    if (!orderDetails) return res.status(400).jso({ message: "wrong order" });
-    let status =
-      type === "rider"
-        ? orderDetails.status
-        : type === "vendor"
-        ? orderDetails.vendorStatus
-        : orderDetails.customerStatus;
+  static getOrderStatus = async (type, req, res) =>{
+    let orderId = req.params.orderId
+    let orderDetails = (type === "rider")? await OrderRiderStatusModel.findOne({orderId}).lean() : await OrderModel.findById(orderId).lean();
+    if(!orderDetails)
+        return res.status(400).jso({"message": "wrong order"});
+    let status = (type === "rider") ? orderDetails.status : (type === "vendor") ? orderDetails.vendorStatus : orderDetails.customerStatus;
 
-    return res.status(200).json({ status });
-  };
+    return res.status(200).json({status})
+  }
 }
 export { UserController };
 

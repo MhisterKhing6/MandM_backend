@@ -4,7 +4,6 @@ import {
   getAuthorizationToken,
 } from "../utils/WebTokenController.js";
 import { VendorController } from "../controlers/vendorController.js";
-import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import { DispatcherController } from "../controlers/dispatcherController.js";
 
 const dispatcherRoute = Router();
@@ -46,6 +45,17 @@ dispatcherRoute.post('/toggle/availability-status', DispatcherController.changeA
  * get rider status
  */
 dispatcherRoute.get("/rider/status", DispatcherController.getAvailabilityStatus);
+
+//verify identity model
+dispatcherRoute.post(
+  "/rider-verification",
+  DispatcherController.verifyIdentity
+);
+
+dispatcherRoute.post(
+  "/rider-operation-area",
+  DispatcherController.operationArea
+);
 
 
 
