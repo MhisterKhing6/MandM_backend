@@ -103,6 +103,12 @@ vendorRouter.get("/recent/orders", VendorController.pendingOrdersRecent);
  */
 vendorRouter.get("/payment/:storeId", VendorController.paymentStore);
 
+/**
+ * get store state
+ */
+vendorRouter.post("/store-state", VendorController.vendorOpenOrCloseStore);
+
+
 
 
 export { vendorRouter };

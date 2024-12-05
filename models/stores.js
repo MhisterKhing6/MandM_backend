@@ -6,6 +6,9 @@ const Store = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   storeName: { type: String, required: true },
   storeAddress: { type: String },
+  //startTime: {type:String},
+  //endTime: {type:String},
+  open: {type: Schema.Types.Boolean, default:true},
   storePhone: { type: String, required: true },
   location: {
     type: { type: String, default: "Point" },

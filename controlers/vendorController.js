@@ -708,6 +708,26 @@ class VendorController {
       return res.status(500).json({"message": "internal error"})
     }
   }
+  //get payment store
+  static vendorOpenOrCloseStore = async (req, res) => {
+  let details = req.body
+  if(!(details.storeId && details.state)) 
+      return res.status(400).json({message: "storeId and state required"})
+  
+  try {
+    let store = await StoreModel.findById(details.storeId);
+    if(!store) 
+      return res.status(400).json({message: "wrong store id"});
+    store.open = details.state.toUpperCase() == "OPEN";
+    await store.save();
+    return res.status(200).json({message: "operation success"})
+    
+  }catch(err) {
+    console.log(err)
+    return res.status(500).json({"message": "internal error"})
+  }
+ }
 }
+
 
 export { VendorController };
