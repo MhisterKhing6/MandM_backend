@@ -2,9 +2,9 @@ import { ItemSizesModel } from "../models/itemSizes.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
 import { OrderRiderStatusModel } from "../models/OrderStatus.js";
-import { PaymentVendorModel } from "../models/paymentStore.js";
 import { StoreModel } from "../models/stores.js";
 import sendNewOrderNotification from "../utils/notificationHandler.js";
+import { calculateFare } from "../utils/transportCalculation.js";
 import { UserController } from "./userController.js";
 
 class CustomerController {
@@ -16,18 +16,31 @@ class CustomerController {
       let ordersDetails = req.body;
       let pendingProcess = []; //fast process
       //loop through thee orders
+      // print(ordersDetails);
+      console.log(ordersDetails);
       for (let storeOrder of ordersDetails) {
         //form order entry
         //find store entry
         let store = await StoreModel.findById(storeOrder.storeId)
-          .lean()
-          .select("userId");
-        if (!store) return res.status(400).json("No store entry found");
 
+          .lean()
+          .select("userId location");
+        if (!store) return res.status(400).json("No store entry found");
+        console.log(store);
         let order = new OrderModel({
           customerId: req.user._id,
           storeId: storeOrder.storeId,
           vendorId: store.userId,
+          deliveryCost: calculateFare(
+            {
+              latitude: storeOrder.address.latitude,
+              longitude: storeOrder.address.longitude,
+            },
+            {
+              latitude: store.location.coordinates[1],
+              longitude: store.location.coordinates[0],
+            }
+          ),
           address: {
             coordinates: [
               storeOrder.address.latitude,
@@ -35,7 +48,6 @@ class CustomerController {
             ],
           },
         });
-        mainOrder = order;
         //calculate the total price of order and push it to pending process
         let orderTotalPrice = 0;
         for (const orderItem of storeOrder.items) {
@@ -72,31 +84,13 @@ class CustomerController {
           );
         }
         //push order
-        order.totalPrice = orderTotalPrice;
+        order.totalPrice = orderTotalPrice + order.deliveryCost;
+        order.itemCost = orderTotalPrice;
         pendingProcess.push(order.save());
-        //find store payment
-        let storePayment = await PaymentVendorModel.findOne({
-          storeId: storeOrder.storeId,
-        });
-        if (storePayment) storePayment += orderTotalPrice;
-        else
-          storePayment = new PaymentVendorModel({
-            storeId: storeOrder.storeId,
-            userId: store.userId,
-            amount: orderTotalPrice,
-          });
-
-        pendingProcess.push(storePayment.save());
-        await sendNewOrderNotification(store.userId, mainOrder);
+        await Promise.all(pendingProcess);
+        await sendNewOrderNotification(store.userId, order);
+        return res.status(200).json({ message: mainOrder });
       }
-      await Promise.all(pendingProcess);
-      for (let storeOrder of ordersDetails) {
-        let store = await StoreModel.findById(storeOrder.storeId)
-          .lean()
-          .select("userId");
-        await sendNewOrderNotification(store.userId, mainOrder);
-      }
-      return res.status(200).json({ message: "order placed successfully" });
     } catch (err) {
       console.log(err);
       return res.status(501).json({ message: "error occurred" });

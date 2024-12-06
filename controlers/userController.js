@@ -258,7 +258,7 @@ class UserController {
 
   static getNearStoresByCategory = async (req, res) => {
     try {
-      const { longitude, latitude, maxDistance = 5000 } = req.query;
+      const { longitude, latitude, maxDistance = 500000 } = req.query;
 
       if (!longitude || !latitude) {
         return res

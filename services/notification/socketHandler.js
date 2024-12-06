@@ -24,9 +24,7 @@ class SocketServices {
   static onConnection = async (socket) => {
     //take authentication token
     const token = socket.handshake.auth.token;
-    const token3 = socket.handshake.headers;
-    // console.log(token);
-    // console.log(socket.handshake);
+    console.log(socket.handshake);
     //check if the token is given
     if (!token) {
       socket.disconnect(); //disconnect user
@@ -100,10 +98,8 @@ class SocketServices {
     //get socket id from user id
     let activeRider = await getActiveMember(userId, "dispatcher"); //check if the user is active
     if (activeRider) {
-      console.log(activeRider);
       io.to(activeRider.socketId).emit("riderOrder", { order });
     }
-    console.log("Herrrrrrr");
   };
 
   //send order rider
@@ -132,9 +128,7 @@ class SocketServices {
       //{userId, latitude, longitude}
       //find driver
       //finds the user of the particular
-      // console.log(details);
       let user = await UserModel.findById(details.userId).lean();
-      // console.log(details);
       if (!user || user.role != "dispatcher") {
         console.log("cant find user information from id or user not rider");
         return;
