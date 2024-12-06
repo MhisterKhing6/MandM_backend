@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { PaymentMethodController } from "../utils/paymentMethods.js";
 import {
   decodeToken,
   getAuthorizationToken,
@@ -40,13 +41,26 @@ dispatcherRoute.get("/order/status/:orderId", DispatcherController.orderStatus);
 /**
  * toggle  rider status
  */
-dispatcherRoute.post('/toggle/availability-status', DispatcherController.changeAvailability)
+dispatcherRoute.post(
+  "/toggle/availability-status",
+  DispatcherController.changeAvailability
+);
 
 /**
  * get rider status
  */
-dispatcherRoute.get("/rider/status", DispatcherController.getAvailabilityStatus);
+dispatcherRoute.get(
+  "/rider/status",
+  DispatcherController.getAvailabilityStatus
+);
 
+dispatcherRoute.post(
+  "/payment-method",
+  PaymentMethodController.addPaymentMethod
+);
+dispatcherRoute.get(
+  "/payment-method",
+  PaymentMethodController.getPaymentMethods
+);
 
-
-export {dispatcherRoute}
+export { dispatcherRoute };

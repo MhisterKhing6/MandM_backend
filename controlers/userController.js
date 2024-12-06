@@ -1,5 +1,6 @@
 //handle user functions
 import { UserModel } from "../models/user.js";
+import axios from "axios";
 import {
   sendEmailVerification,
   sendResetPassword,
@@ -19,6 +20,7 @@ import { ItemModel } from "../models/items.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
 import { OrderRiderStatusModel } from "../models/OrderStatus.js";
+import { response } from "express";
 class UserController {
   //register user functions
   static register = async (req, res) => {
@@ -209,6 +211,7 @@ class UserController {
 
   static login = async (req, res) => {
     let loginDetails = req.body;
+    console.log(loginDetails);
     if (!(loginDetails.id && loginDetails.password))
       return res.status(400).json({ message: "not all fields given" });
     //check if id is or phone number
@@ -220,6 +223,7 @@ class UserController {
         : { phoneNumber: loginDetails.id };
     //search for user
     let user = await UserModel.findOne(query).lean();
+    console.log(user);
     if (!user) {
       updateUserFCMToken(user._id, loginDetails.token);
       return res.status(400).json({ message: "user is not registered" });
@@ -370,8 +374,10 @@ class UserController {
   // };
 
   static updateUserFCMToken = async (req, res) => {
+    // console.log(req.user);
     const userId = req.user._id;
-    const newToken = req.body;
+    const newToken = req.body.fcmToken;
+    // console.log(newToken);
     try {
       await UserModel.findByIdAndUpdate(userId, { fcmToken: newToken });
 
@@ -516,6 +522,36 @@ class UserController {
         : orderDetails.customerStatus;
 
     return res.status(200).json({ status });
+  };
+
+  static initializeTransaction = async (req, res) => {
+    const { email, amount, callbackUrl } = req.body;
+
+    try {
+      const response = await axios.post(
+        "https://api.paystack.co/transaction/initialize",
+        {
+          email, // User email
+          amount: amount * 100, // Amount in kobo (e.g., 5000 for NGN 50.00)
+          callback_url: callbackUrl, // Redirect URL after payment
+        },
+        {
+          headers: {
+            Authorization: `Bearer sk_test_24a97f6465025b11a4bfdbdcda862e47501699be`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(response.data);
+
+      // Send the payment URL back to the client
+      res.status(200).json({ status: true, data: response.data.data });
+    } catch (error) {
+      console.error(error.response?.data || error.message);
+      res
+        .status(500)
+        .json({ status: false, error: error.response?.data || error.message });
+    }
   };
 }
 export { UserController };

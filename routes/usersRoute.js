@@ -1,5 +1,9 @@
 import { Router } from "express";
 import { UserController } from "../controlers/userController.js";
+import {
+  decodeToken,
+  getAuthorizationToken,
+} from "../utils/WebTokenController.js";
 
 const userRouter = Router();
 
@@ -22,8 +26,12 @@ userRouter.get("/item-categories", UserController.categories);
 userRouter.get("/stores", UserController.getNearStoresByCategory);
 userRouter.get("/stores/items/:storeId", UserController.getItemsByStoreId);
 userRouter.post("/cart/add", UserController.addToCart);
-userRouter.post("/updatefcmtoken", UserController.updateUserFCMToken);
+userRouter.post(
+  "/updatefcmtoken",
+  authenticatedMiddleWare,
+  UserController.updateUserFCMToken
+);
 userRouter.get("/cart/:userId", UserController.fetchCartItems);
 userRouter.post("/cart/remove", UserController.removeFromCart);
-
+userRouter.post("/initialize-payment", UserController.initializeTransaction);
 export { userRouter };

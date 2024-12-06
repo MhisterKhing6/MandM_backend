@@ -1,6 +1,7 @@
 import { OrderModel } from "../models/orders.js";
 import { OrderRiderStatusModel } from "../models/OrderStatus.js";
 import { activeUsers } from "../services/notification/socketHandler.js";
+import axios from "axios";
 import {
   findAvailableRiders,
   getRiderStatus,
@@ -112,6 +113,8 @@ class DispatcherController {
     console.log(orderStatus);
     return res.status(200).json({ status: orderStatus ? orderStatus : "0" });
   };
+
+  // Initialize Transaction
 }
 
 export { DispatcherController };

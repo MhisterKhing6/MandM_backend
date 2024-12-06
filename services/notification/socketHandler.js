@@ -134,7 +134,7 @@ class SocketServices {
       //finds the user of the particular
       // console.log(details);
       let user = await UserModel.findById(details.userId).lean();
-      console.log(details);
+      // console.log(details);
       if (!user || user.role != "dispatcher") {
         console.log("cant find user information from id or user not rider");
         return;
