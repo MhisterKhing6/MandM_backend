@@ -6,7 +6,6 @@ import { StoreModel } from "../models/stores.js";
 import sendNewOrderNotification from "../utils/notificationHandler.js";
 import { calculateFare } from "../utils/transportCalculation.js";
 import { UserController } from "./userController.js";
-
 class CustomerController {
   static placeOrder = async (req, res) => {
     let mainOrder;
@@ -28,7 +27,7 @@ class CustomerController {
           customerId: req.user._id,
           storeId: storeOrder.storeId,
           vendorId: store.userId,
-          deliveryCost: calculateFare({latitude:storeOrder.address.latitude,longitude:storeOrder.address.longitude}, {latitude:store.location.coordinates[1],longitude:store.location.coordinates[0]}),
+          deliveryCost: calculateFare({latitude:storeOrder.address.latitude,longitude:storeOrder.address.longitude}, {latitude:store.location.coordinates[1],longitude:store.location.coordinates[0]}).totalFare,
           address: {
             coordinates: [
               storeOrder.address.latitude,
