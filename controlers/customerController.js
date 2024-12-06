@@ -21,14 +21,14 @@ class CustomerController {
         //find store entry
         let store = await StoreModel.findById(storeOrder.storeId)
           .lean()
-          .select("userId");
+          .select();
         if (!store) return res.status(400).json("No store entry found");
 
         let order = new OrderModel({
           customerId: req.user._id,
           storeId: storeOrder.storeId,
           vendorId: store.userId,
-          deliveryCost: calculateFare({latitude:storeOrder.address.latitude,longitude:storeOrder.address.longitude}, {latitude:store.address.coordinates[1],longitude:store.address.coordinates[0]}),
+          deliveryCost: calculateFare({latitude:storeOrder.address.latitude,longitude:storeOrder.address.longitude}, {latitude:store.location.coordinates[1],longitude:store.location.coordinates[0]}),
           address: {
             coordinates: [
               storeOrder.address.latitude,
