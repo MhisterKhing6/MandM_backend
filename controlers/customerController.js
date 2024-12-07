@@ -8,7 +8,6 @@ import { calculateFare } from "../utils/transportCalculation.js";
 import { UserController } from "./userController.js";
 class CustomerController {
   static placeOrder = async (req, res) => {
-    let mainOrder;
     //items decide the kind of data structures between the interfaces
     //[{storeId:"stores", items:[{itemSizeId:ssll}]}, //[{storeId:"stores", items:[{itemSizeId:ssll}]}  ]
     try {
@@ -89,7 +88,6 @@ class CustomerController {
         pendingProcess.push(order.save());
         await Promise.all(pendingProcess);
         await sendNewOrderNotification(store.userId, order);
-        console.log(order);
         return res.status(200).json({ message: order });
       }
     } catch (err) {
