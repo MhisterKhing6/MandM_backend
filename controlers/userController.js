@@ -542,7 +542,7 @@ class UserController {
           },
         }
       );
-      console.log(response.data);
+      // console.log(response.data);
 
       // Send the payment URL back to the client
       res.status(200).json({ status: true, data: response.data.data });
@@ -551,6 +551,37 @@ class UserController {
       res
         .status(500)
         .json({ status: false, error: error.response?.data || error.message });
+    }
+  };
+
+  static verifyPayment = async (req, res) => {
+    const { reference } = req.body; // Reference sent by Paystack in the callback URL
+    console.log(reference);
+    try {
+      const response = await axios.get(
+        `https://api.paystack.co/transaction/verify/${reference}`,
+        {
+          headers: {
+            Authorization: `Bearer sk_test_24a97f6465025b11a4bfdbdcda862e47501699be`,
+          },
+        }
+      );
+      console.log(response);
+      // Handle the transaction verification response
+      const { status, data } = response;
+      if (status === 200 && data.data.status === "success") {
+        // Payment successful, update your database
+        return res
+          .status(200)
+          .json({ message: "Payment verified successfully", data: data.data });
+      }
+
+      // Payment failed
+      res
+        .status(400)
+        .json({ message: "Payment verification failed", data: data.data });
+    } catch (error) {
+      res.status(500).json({ error: error.response?.data || error.message });
     }
   };
 }

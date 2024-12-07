@@ -6,7 +6,6 @@ import { StoreModel } from "../models/stores.js";
 import sendNewOrderNotification from "../utils/notificationHandler.js";
 import { calculateFare } from "../utils/transportCalculation.js";
 import { UserController } from "./userController.js";
-
 class CustomerController {
   static placeOrder = async (req, res) => {
     let mainOrder;
@@ -22,9 +21,10 @@ class CustomerController {
         //form order entry
         //find store entry
         let store = await StoreModel.findById(storeOrder.storeId)
-
           .lean()
-          .select("userId location");
+          .select();
+        if (!store) return res.status(400).json("No store entry found");
+
         if (!store) return res.status(400).json("No store entry found");
         console.log(store);
         let order = new OrderModel({
@@ -40,7 +40,7 @@ class CustomerController {
               latitude: store.location.coordinates[1],
               longitude: store.location.coordinates[0],
             }
-          ),
+          ).totalFare,
           address: {
             coordinates: [
               storeOrder.address.latitude,
@@ -89,7 +89,8 @@ class CustomerController {
         pendingProcess.push(order.save());
         await Promise.all(pendingProcess);
         await sendNewOrderNotification(store.userId, order);
-        return res.status(200).json({ message: mainOrder });
+        console.log(order);
+        return res.status(200).json({ message: order });
       }
     } catch (err) {
       console.log(err);

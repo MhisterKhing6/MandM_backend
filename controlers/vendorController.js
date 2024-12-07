@@ -54,8 +54,7 @@ class VendorController {
         },
         type: store.type,
       });
-      let payment = await new PaymentVendorModel({storeId: newStore._id, amount:0, userId:req.user._id}).save()
-      newStore.payment = payment._id;
+      await new VirtualAccountModel({id:newStore._id}).save()
       await newStore.save();
       return res.status(200).json({ message: "store successfully added" });
     } catch (err) {

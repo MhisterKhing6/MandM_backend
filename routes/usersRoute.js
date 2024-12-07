@@ -34,4 +34,5 @@ userRouter.post(
 userRouter.get("/cart/:userId", UserController.fetchCartItems);
 userRouter.post("/cart/remove", UserController.removeFromCart);
 userRouter.post("/initialize-payment", UserController.initializeTransaction);
+userRouter.post("/verify-payment", UserController.verifyPayment);
 export { userRouter };
