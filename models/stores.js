@@ -6,6 +6,14 @@ const Store = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   storeName: { type: String, required: true },
   storeAddress: { type: String },
+  ratings: {
+    type: Schema.Types.Mixed,
+    default: {
+      totalPeopleRated: 0,
+      totalRatedValue: 0,
+      totalRatedPoint: 0.0
+    }
+  },
   //startTime: {type:String},
   //endTime: {type:String},
   open: {type: Schema.Types.Boolean, default:true},
