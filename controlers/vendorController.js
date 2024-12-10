@@ -707,6 +707,7 @@ class VendorController {
       return res.status(500).json({"message": "internal error"})
     }
   }
+  
   //get payment store
   static vendorOpenOrCloseStore = async (req, res) => {
   let details = req.body

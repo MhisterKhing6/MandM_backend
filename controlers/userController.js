@@ -491,6 +491,7 @@ class UserController {
       res.status(500).json({ error: "Failed to remove item" });
     }
   };
+  
   static fetchCartItems = async (req, res) => {
     const { userId } = req.params;
 
