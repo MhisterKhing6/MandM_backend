@@ -8,6 +8,24 @@ async function storeRiderLocation(riderId, lat, lon) {
   await redis.geoadd('activeRiders', lon, lat, riderId);
   console.log(`Rider ${riderId} location stored.`);
 }
+//active pending orders
+async function increaseCurrentRiderOrder(riderId) {
+  let pendingOrders = await redis.hget('pendingOrders', riderId);
+  if(pendingOrders) {
+    pendingOrders = Number.parseInt(pendingOrders) + 1;
+  } else {
+    pendingOrders = 1;
+  }
+  await redis.hset("pendingOrders", riderId, pendingOrders)
+}
+
+async function decreaseCurrentRiderOrder(riderId) {
+  let pendingOrders = await redis.hget('pendingOrders', riderId);
+  if(pendingOrders) {
+    pendingOrders = Number.parseInt(pendingOrders) - 1;
+    await redis.hset("pendingOrders", riderId, pendingOrders)
+  } 
+}
 
 // Set rider status using a Redis Hash
 async function setRiderStatus(riderId, status) {
@@ -132,5 +150,7 @@ export {
   getAllActiveMembers,
   getUserIdfromSocket,
   getRiderStatus,
+  increaseCurrentRiderOrder,
+  decreaseCurrentRiderOrder,
   redis,
 };

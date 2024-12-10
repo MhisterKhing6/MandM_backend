@@ -25,8 +25,8 @@ class VendorController {
     let storeOwnerIdentity = await VerifyIdentityModel.findOne({
       userId: req.user._id,
     });
-    // if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-    //   return res.status(401).json({ message: "vendor identity not verified" });
+    if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
+        return res.status(401).json({ message: "vendor identity not verified" });
     //check if user has store already
     let store = req.body;
     if (

@@ -1,5 +1,5 @@
 import { OrderModel } from "../models/orders.js";
-import { OrderRiderStatusModel } from "../models/OrderStatus.js";
+import { riderOrdersModel } from "../models/riderOrders.js";
 import { activeUsers } from "../services/notification/socketHandler.js";
 import axios from "axios";
 import {
@@ -15,6 +15,7 @@ import { saveUploadFileDisk } from "../utils/FileHandler.js";
 import { generateFileUrl } from "../utils/FileHandler.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import { riderDetailsModel } from "../models/riderDetails.js";
+import { StoreModel } from "../models/stores.js";
 
 class DispatcherController {
   static acceptOrRejectOrder = async (req, res) => {
@@ -38,12 +39,10 @@ class DispatcherController {
     if (!order) return res.status(400).json({ message: "wrong order id" });
     if (details.status.toUpperCase() === "ACCEPTED") {
       //form order rider status
-      await new OrderRiderStatusModel({
+      await new riderOrdersModel({
         orderId: order._id,
         riderId: req.user._id,
       }).save();
-      //toggle available to zero
-      setRiderStatus(req.user._id, "0");
       //change customer order status
     } else if (details.status.toUpperCase() === "REJECTED") {
       let nextAvailableDriver = null;
@@ -81,13 +80,13 @@ class DispatcherController {
     } else if (details.status === "PICKED") {
       //Question will we pay the vendor here, or not
       //find order rider to update information
-      let orderRider = OrderRiderStatusModel.find({ orderId: details.orderId });
+      let orderRider = riderOrdersModel.find({ orderId: details.orderId });
       orderRider.status = "PICKED";
       order.vendorStatus = "COMPLETED";
       order.customerStatus = "PICKED";
       Promise.all(orderRider.save(), order.save());
     } else {
-      let orderRider = OrderRiderStatusModel.find({ orderId: details.orderId });
+      let orderRider = riderOrdersModel.find({ orderId: details.orderId });
       orderRider.status = "DELIVERED";
       order.customerStatus = "DELIVERED";
       let virtualAccountRider = await VirtualAccountModel.findOne({
@@ -228,6 +227,31 @@ class DispatcherController {
       return res.status(501).json({ message: "couldn't add identity" });
     }
   };
+
+
+  //get all pending orders
+  static acceptedOrders = async (req, res) => {
+    //rider id
+    let orders = await riderOrdersModel.find({riderId:req.user._id, $or :[ {status:"ACCEPTED"}, {status:"PICKED"} ]}).populate({
+    path: 'orderId',
+    populate: {
+      path: 'store',
+      model: StoreModel,
+    }}).populate("riderId").lean()
+    return res.status(200).json(orders)
+  }
+
+ //get all the orders today
+ static getAllOrders  = async (req, res) => {
+  let orders = await riderOrdersModel.find({riderId:req.user._id}).populate({
+    path: 'orderId',
+    populate: {
+      path: 'store',
+      model: StoreModel,
+    }}).populate("riderId").lean()
+    return res.status(200).json(orders)
+ }
+  
 }
 
 export { DispatcherController };

@@ -72,4 +72,15 @@ dispatcherRoute.post(
   DispatcherController.operationArea
 );
 
+dispatcherRoute.get(
+  "/accepted-orders",
+  DispatcherController.acceptedOrders
+);
+
+//get all orders
+dispatcherRoute.get(
+  "/all-orders",
+  DispatcherController.getAllOrders
+);
+
 export { dispatcherRoute };

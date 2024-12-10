@@ -43,4 +43,9 @@ get status
 */
 customerRouter.post("/cancel-order", CustomerController.cancelOrder)
 
+/*
+get status
+*/
+customerRouter.post("/rate", CustomerController.rating) //{entityId:"id of store or item", rateValue:3,message:"store so find"}
+
 export { customerRouter };
