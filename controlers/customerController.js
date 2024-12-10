@@ -1,7 +1,7 @@
 import { ItemSizesModel } from "../models/itemSizes.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
-import { OrderRiderStatusModel } from "../models/OrderStatus.js";
+import { riderOrdersModel } from "../models/riderOrders.js";
 import { StoreModel } from "../models/stores.js";
 import sendNewOrderNotification from "../utils/notificationHandler.js";
 import { calculateFare } from "../utils/transportCalculation.js";
@@ -114,7 +114,7 @@ class CustomerController {
     order.customerStatus = "CANCELLED";
     await order.save();
     //update the order rider status too
-    let orderRider = await OrderRiderStatusModel.findOne({ orderId });
+    let orderRider = await riderOrdersModel.findOne({ orderId });
     if (orderRider) {
       orderRider.status = "CANCELLED";
       await orderRider.save();

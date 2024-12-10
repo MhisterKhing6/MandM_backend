@@ -19,7 +19,7 @@ import Cart from "../models/cart.js";
 import { ItemModel } from "../models/items.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
-import { OrderRiderStatusModel } from "../models/OrderStatus.js";
+// import { OrderRiderStatusModel } from "../models/OrderStatus.js";
 import { response } from "express";
 class UserController {
   //register user functions
@@ -258,7 +258,7 @@ class UserController {
 
   static getNearStoresByCategory = async (req, res) => {
     try {
-      const { longitude, latitude, maxDistance = 500000 } = req.query;
+      const { longitude, latitude, maxDistance = 5000 } = req.query;
 
       if (!longitude || !latitude) {
         return res
