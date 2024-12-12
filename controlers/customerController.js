@@ -1,3 +1,4 @@
+import { customerRatingsModel } from "../models/customerRatings.js";
 import { ItemSizesModel } from "../models/itemSizes.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
@@ -121,6 +122,27 @@ class CustomerController {
     }
     return res.status(200).json({ message: "cancelled" });
   };
+
+  static rating = async (req, res) => {
+    try {
+      let details = req.body;
+      if (!(details.entityId && details.type))
+        return res.status(400).json({ message: "entityId, type are required" });
+      //find store
+      let entity = type.toLowerCase() === "store" ? await StoreModel.findById(details.entityId) : await StoreModel.findById(details.entityId)
+      if (!entity)
+        return res.status(400).json({ message: "wrong entity id" });
+      //compute rateValue
+      entity.ratings.totalPeopleRated += 1;
+      entity.ratings.totalRatedValueValue += (details.ratedValue) ? details.ratedValue : 0;
+      entity.ratings.totalRatedPoint = (entity.ratings.totalPeopleRated === 0) ? 0 : (entity.ratings.totalRatedValueValue / entity.ratings.totalPeopleRated)
+      Promise.all([entity.save(), new customerRatingsModel({ customerId: req.user._id, entityId: details.entityId, message: details.message, rateValue: details.ratedValue }).save()])
+      return res.status(200).json({ message: "operation success" })
+    } catch (err) {
+      console.log(err)
+      return res.status(500).json({message:"internal error"})
+    }
+  }
 }
 
 export { CustomerController };

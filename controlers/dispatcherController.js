@@ -1,5 +1,5 @@
 import { OrderModel } from "../models/orders.js";
-import { OrderRiderStatusModel } from "../models/OrderStatus.js";
+import { riderOrdersModel } from "../models/riderOrders.js";
 import { activeUsers } from "../services/notification/socketHandler.js";
 import axios from "axios";
 import {
@@ -15,6 +15,9 @@ import { saveUploadFileDisk } from "../utils/FileHandler.js";
 import { generateFileUrl } from "../utils/FileHandler.js";
 import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import { riderDetailsModel } from "../models/riderDetails.js";
+import { StoreModel } from "../models/stores.js";
+import { OrderItemModel } from "../models/orderItems.js";
+import { UserModel } from "../models/user.js";
 
 class DispatcherController {
   static acceptOrRejectOrder = async (req, res) => {
@@ -34,17 +37,18 @@ class DispatcherController {
       ].includes(details.status.toUpperCase())
     )
       return res.status(400).json({ message: "wrong status element" });
-    let order = await OrderModel.findById(details.order);
+    let order = await OrderModel.findById(details.orderId);
+    console.log(order);
     if (!order) return res.status(400).json({ message: "wrong order id" });
+
     if (details.status.toUpperCase() === "ACCEPTED") {
       //form order rider status
-      await new OrderRiderStatusModel({
+      await new riderOrdersModel({
         orderId: order._id,
         riderId: req.user._id,
       }).save();
-      //toggle available to zero
-      setRiderStatus(req.user._id, "0");
       //change customer order status
+      return res.status(200).json({ message: "Order accepted successfully" });
     } else if (details.status.toUpperCase() === "REJECTED") {
       let nextAvailableDriver = null;
       let availableRiders = await findAvailableRiders(
@@ -81,13 +85,13 @@ class DispatcherController {
     } else if (details.status === "PICKED") {
       //Question will we pay the vendor here, or not
       //find order rider to update information
-      let orderRider = OrderRiderStatusModel.find({ orderId: details.orderId });
+      let orderRider = riderOrdersModel.find({ orderId: details.orderId });
       orderRider.status = "PICKED";
       order.vendorStatus = "COMPLETED";
       order.customerStatus = "PICKED";
       Promise.all(orderRider.save(), order.save());
     } else {
-      let orderRider = OrderRiderStatusModel.find({ orderId: details.orderId });
+      let orderRider = riderOrdersModel.find({ orderId: details.orderId });
       orderRider.status = "DELIVERED";
       order.customerStatus = "DELIVERED";
       let virtualAccountRider = await VirtualAccountModel.findOne({
@@ -105,7 +109,7 @@ class DispatcherController {
         virtualAccountStore.save()
       );
     }
-    return res.status(200).json();
+    return res.status(200).json({});
   };
 
   static orderStatus = async (req, res) => {
@@ -227,6 +231,123 @@ class DispatcherController {
       console.log(err);
       return res.status(501).json({ message: "couldn't add identity" });
     }
+  };
+
+  //get all pending orders
+  // static acceptedOrders = async (req, res) => {
+  //   //rider id
+  //   let orders = await riderOrdersModel
+  //     .find({
+  //       riderId: req.user._id,
+  //       $or: [{ status: "ACCEPTED" }, { status: "PICKED" }],
+  //     })
+  //     .populate({
+  //       path: "orderId",
+  //       populate: {
+  //         path: "store",
+  //         model: StoreModel,
+  //       },
+  //     })
+  //     .populate("riderId")
+  //     .lean();
+  //   return res.status(200).json(orders);
+  // };
+
+  static acceptedOrders = async (req, res) => {
+    try {
+      // Fetch orders with status "ACCEPTED" or "PICKED" for the rider
+      let orders = await riderOrdersModel
+        .find({
+          riderId: req.user._id,
+          $or: [{ status: "ACCEPTED" }, { status: "PICKED" }],
+        })
+        .populate({
+          path: "orderId",
+          populate: {
+            path: "storeId",
+
+            model: StoreModel,
+            select: "storeName storePhone location", // Include location, phone, and name fields
+          },
+        })
+        .populate({
+          path: "orderId",
+          populate: {
+            path: "customerId",
+            model: UserModel,
+            select: "phoneNumber",
+          },
+        })
+
+        .lean();
+
+      if (!orders || orders.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No accepted or picked orders found" });
+      }
+
+      // Extract order IDs
+      const orderIds = orders.map((order) => order.orderId._id);
+
+      // Fetch items for the orders
+      const orderItems = await OrderItemModel.find({
+        orderId: { $in: orderIds },
+      })
+        .populate({
+          path: "itemSizeId",
+          select: "name itemId",
+          populate: {
+            path: "itemId",
+            select: "name",
+          },
+        })
+        .lean();
+
+      // Map items to their respective orders
+      const orderItemsMap = orderItems.reduce((acc, item) => {
+        acc[item.orderId] = acc[item.orderId] || [];
+        acc[item.orderId].push(item);
+        return acc;
+      }, {});
+
+      // Enrich orders with items
+      const enrichedOrders = orders.map((order) => {
+        const orderData = order.orderId;
+        return {
+          ...order,
+          orderDetails: {
+            ...orderData,
+            store: orderData.store, // Includes location, phone, and name
+            items: orderItemsMap[orderData._id] || [],
+          },
+        };
+      });
+
+      return res.status(200).json(enrichedOrders);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: "Error fetching accepted orders" });
+    }
+  };
+
+  //get all the orders today
+  static getAllOrders = async (req, res) => {
+    let orders = await riderOrdersModel
+      .find({ riderId: req.user._id })
+      .populate({
+        path: "orderId",
+        populate: {
+          path: "store",
+          model: StoreModel,
+        },
+      })
+
+      .populate("riderId")
+      .lean();
+    return res.status(200).json(orders);
   };
 }
 

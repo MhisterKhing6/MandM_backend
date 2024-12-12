@@ -19,7 +19,7 @@ import Cart from "../models/cart.js";
 import { ItemModel } from "../models/items.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
-// import { OrderRiderStatusModel } from "../models/OrderStatus.js";
+import { riderOrdersModel } from "../models/riderOrders.js";
 import { response } from "express";
 class UserController {
   //register user functions
@@ -491,6 +491,7 @@ class UserController {
       res.status(500).json({ error: "Failed to remove item" });
     }
   };
+
   static fetchCartItems = async (req, res) => {
     const { userId } = req.params;
 
@@ -511,7 +512,7 @@ class UserController {
     let orderId = req.params.orderId;
     let orderDetails =
       type === "rider"
-        ? await OrderRiderStatusModel.findOne({ orderId }).lean()
+        ? await riderOrdersModel.findOne({ orderId }).lean()
         : await OrderModel.findById(orderId).lean();
     if (!orderDetails) return res.status(400).jso({ message: "wrong order" });
     let status =

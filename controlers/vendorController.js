@@ -25,8 +25,8 @@ class VendorController {
     let storeOwnerIdentity = await VerifyIdentityModel.findOne({
       userId: req.user._id,
     });
-    // if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-    //   return res.status(401).json({ message: "vendor identity not verified" });
+    if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
+      return res.status(401).json({ message: "vendor identity not verified" });
     //check if user has store already
     let store = req.body;
     if (
@@ -375,6 +375,7 @@ class VendorController {
         message: "The order status can either be ACCEPTED or REJECTED",
       });
     let order = await OrderModel.findById(orderDetails.orderId);
+    // console.log(order);
     //check if order is meant for vendor
     if (order.vendorId.toString() !== req.user._id.toString())
       return res.status(401).json({ message: "vendor not authorized" });
@@ -392,7 +393,11 @@ class VendorController {
         //inform admin
       } else {
         let selectedRider = availableRiders[0];
+        console.log(order);
+        const store = await StoreModel.findOne(order.storeId);
+        console.log(store.storeName);
         SocketServices.sendOrderNotificationRider(io, selectedRider.riderId, {
+          storeName: store.storeName,
           address: order.address,
           orderId: order._id.toString(),
           order,
@@ -404,6 +409,7 @@ class VendorController {
       order.customerStatus = "APPROVED";
     }
     //notify customer
+    // console.log(order);
     await order.save();
     return res.status(200).json({ orderId: order._id });
   };
@@ -728,6 +734,7 @@ class VendorController {
       return res.status(500).json({ message: "internal error" });
     }
   };
+
   //get payment store
   static vendorOpenOrCloseStore = async (req, res) => {
     let details = req.body;

@@ -71,5 +71,10 @@ dispatcherRoute.post(
   "/rider-operation-area",
   DispatcherController.operationArea
 );
+dispatcherRoute.post("/order-status", DispatcherController.acceptOrRejectOrder);
+dispatcherRoute.get("/accepted-orders", DispatcherController.acceptedOrders);
+
+//get all orders
+dispatcherRoute.get("/all-orders", DispatcherController.getAllOrders);
 
 export { dispatcherRoute };

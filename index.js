@@ -11,10 +11,12 @@ import { SocketServices } from "./services/notification/socketHandler.js";
 import { customerRouter } from "./routes/customerRoute.js";
 import admin from "firebase-admin";
 import { dispatcherRoute } from "./routes/dispatcherRoute.js";
-import fs from "fs"
+import fs from "fs";
 
 // Initialize Firebase Admin with service account
-const serviceAccount = JSON.parse(fs.readFileSync("./utils/firebase-service-account.json" ));
+const serviceAccount = JSON.parse(
+  fs.readFileSync("./utils/firebase-service-account.json")
+);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
