@@ -16,6 +16,7 @@ import { findAvailableRiders } from "../utils/redisStorage.js";
 import { SocketServices } from "../services/notification/socketHandler.js";
 import { io } from "../index.js";
 import { VirtualAccountModel } from "../models/virtualAccount.js";
+import { v4 } from "uuid";
 class VendorController {
   static addStore = async (req, res) => {
     //ensure store owner has verified identity
@@ -26,7 +27,7 @@ class VendorController {
       userId: req.user._id,
     });
     if (!storeOwnerIdentity || storeOwnerIdentity.status !== "verified")
-      return res.status(401).json({ message: "vendor identity not verified" });
+        return res.status(401).json({ message: "vendor identity not verified" });
     //check if user has store already
     let store = req.body;
     if (
@@ -42,7 +43,7 @@ class VendorController {
     //save store information
     try {
       //store payment
-
+      
       const newStore = new StoreModel({
         userId: req.user._id,
         storeName: store.storeName,
@@ -54,7 +55,29 @@ class VendorController {
         },
         type: store.type,
       });
-      await new VirtualAccountModel({ id: newStore._id }).save();
+      if(store.images) {
+      let imagesPromise = [];
+      for (const image of store.images) {
+        if (!(image.data && image.fileName))
+          return res
+            .status(400)
+            .json({ message: "image should have have a fileName and data" });
+        imagesPromise.push(
+          saveUploadFileDisk(
+            image.fileName,
+            image.data.split("base64,")[1],
+            v4(),
+            "store"
+          )
+        );
+        //save image
+        await Promise.all(imagesPromise)
+        for(const imageDisk of imagesPromise){
+          newStore.images.push({url:generateFileUrl(imageDisk.fileUrl), diskPath: image.filePath})
+        }
+      }
+    }
+      await new VirtualAccountModel({id:newStore._id}).save()
       await newStore.save();
       return res.status(200).json({ message: "store successfully added" });
     } catch (err) {
@@ -370,46 +393,31 @@ class VendorController {
         .status(400)
         .json({ message: "status and order id are required" });
     //get the order
-    if (!["ACCEPTED", "REJECTED"].includes(orderDetails.status.toUpperCase()))
-      return res.status(400).json({
-        message: "The order status can either be ACCEPTED or REJECTED",
-      });
+    if(!["ACCEPTED", "REJECTED"].includes(orderDetails.status.toUpperCase()))
+      return res.status(400).json({message: "The order status can either be ACCEPTED or REJECTED"})
     let order = await OrderModel.findById(orderDetails.orderId);
-    // console.log(order);
     //check if order is meant for vendor
     if (order.vendorId.toString() !== req.user._id.toString())
-      return res.status(401).json({ message: "vendor not authorized" });
+        return res.status(401).json({ message: "vendor not authorized" });
     //updated order status
     if (orderDetails.status.toUpperCase() === "ACCEPTED") {
       //update notification accordingly
-      order.vendorStatus = "ACCEPTED";
+      order.vendorStatus = "ACCEPTED"
       order.customerStatus = "APPROVED";
       //Find Rider by algorithm
-      let availableRiders = await findAvailableRiders(
-        order.address.coordinates[0],
-        order.address.coordinates[1]
-      );
-      if (availableRiders.length === 0) {
+      let availableRiders = await findAvailableRiders(order.address.coordinates[0], order.address.coordinates[1]);
+      if(availableRiders.length === 0) {
         //inform admin
       } else {
         let selectedRider = availableRiders[0];
-        console.log(order);
-        const store = await StoreModel.findOne(order.storeId);
-        console.log(store.storeName);
-        SocketServices.sendOrderNotificationRider(io, selectedRider.riderId, {
-          storeName: store.storeName,
-          address: order.address,
-          orderId: order._id.toString(),
-          order,
-        });
+        SocketServices.sendOrderNotificationRider(io, selectedRider.riderId, {address:order.address, orderId:order._id.toString(), order})
       }
     } else {
       //notify customer order is rejected
-      order.vendorAcceptanceStatus = "REJECTED";
+      order.vendorAcceptanceStatus = "REJECTED"
       order.customerStatus = "APPROVED";
     }
     //notify customer
-    // console.log(order);
     await order.save();
     return res.status(200).json({ orderId: order._id });
   };
@@ -491,8 +499,7 @@ class VendorController {
   static getStores = async (req, res) => {
     //returns the stores of the user
     let stores = await StoreModel.find({ userId: req.user._id })
-      .populate({ path: "type", select: "name _id" })
-      .populate("payment")
+      .populate({ path: "type", select: "name _id" }).populate("payment")
       .lean();
     return res.status(200).json(stores);
   };
@@ -641,13 +648,10 @@ class VendorController {
       const vendorId = req.user._id; // Assuming req.user contains the authenticated vendor's details
 
       // Define the number of recent orders to fetch
-      const limit = parseInt(req.query.limit, 10) || 30; // Default to 5 if no limit is provided
+      const limit = parseInt(req.query.limit, 10) || 5; // Default to 5 if no limit is provided
 
       // Fetch recent orders for the vendor
-      const orders = await OrderModel.find({
-        vendorId,
-        vendorStatus: "PENDING",
-      })
+      const orders = await OrderModel.find({ vendorId })
         .populate("customerId", "name email") // Include customer details
         .sort({ createdAt: -1 }) // Sort by most recent orders
         .limit(limit) // Limit to the top `n` recent orders
@@ -697,61 +701,56 @@ class VendorController {
 
   static orderStatus = async (req, res) => {
     //returns the vendor status of an order
-    return UserController.getOrderStatus("vendor", req, res);
-  };
+      return UserController.getOrderStatus("vendor", req, res)
+  }
 
   //get recent pending orders
-  static pendingOrdersRecent = async (req, res) => {
-    let pendingOrders = await OrderItemModel.find({ vendorStatus: "PENDING" })
-      .populate("customerId")
-      .limit(10)
-      .lean();
-    for (order of pendingOrders) {
-      let orderItems = await OrderItemModel.find({ orderId: order._id })
-        .populate("itemSizeId")
-        .select("-_v")
-        .lean();
+  static pendingOrdersRecent = async(req, res) => {
+    let pendingOrders = OrderItemModel.find({vendorStatus: "PENDING"}).populate("customerId").limit(10).lean();
+    for(order of pendingOrders) {
+      let orderItems = await OrderItemModel.find({orderId: order._id}).populate("itemSizeId").select("-_v").lean();
       //find the images and attach
-      let images = await ItemImageModel.find({
-        itemId: orderItems.itemSizeId.itemId,
-      });
+      let images = await ItemImageModel.find({itemId: orderItems.itemSizeId.itemId});
       orderItems.itemSizeId.itemImages = images;
       order.orderItems = orderItems;
     }
-    console.log(pendingOrders);
     return res.status(200).json(pendingOrders);
-  };
+  }
 
-  //get payment store
+  //get payment store 
   static paymentStore = async (req, res) => {
     let storeId = req.params.storeId;
     try {
-      let account = await VirtualAccountModel.findOne({ id: storeId }).lean();
-      if (!account) return res.status(400).json({ message: "wrong storeid" });
-      return res.status(200).json(account);
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ message: "internal error" });
+      let account = await VirtualAccountModel.findOne({id:storeId}).lean()
+      if(!account)
+          return res.status(400).json({message: "wrong storeid"})
+      return res.status(200).json(account)
+    }catch(err) {
+      console.log(err)
+      return res.status(500).json({"message": "internal error"})
     }
-  };
+  }
 
   //get payment store
   static vendorOpenOrCloseStore = async (req, res) => {
-    let details = req.body;
-    if (!(details.storeId && details.state))
-      return res.status(400).json({ message: "storeId and state required" });
-
-    try {
-      let store = await StoreModel.findById(details.storeId);
-      if (!store) return res.status(400).json({ message: "wrong store id" });
-      store.open = details.state.toUpperCase() == "OPEN";
-      await store.save();
-      return res.status(200).json({ message: "operation success" });
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ message: "internal error" });
-    }
-  };
+  let details = req.body
+  if(!(details.storeId && details.state)) 
+      return res.status(400).json({message: "storeId and state required"})
+  
+  try {
+    let store = await StoreModel.findById(details.storeId);
+    if(!store) 
+      return res.status(400).json({message: "wrong store id"});
+    store.open = details.state.toUpperCase() === "OPEN";
+    await store.save();
+    return res.status(200).json({message: "operation success"})
+    
+  }catch(err) {
+    console.log(err)
+    return res.status(500).json({"message": "internal error"})
+  }
+ }
 }
+
 
 export { VendorController };

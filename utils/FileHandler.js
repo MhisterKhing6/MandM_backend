@@ -21,6 +21,7 @@ const createFilePath = async (picName, userId, type) => {
   let baseFolder = "";
   if (type === "vId") baseFolder = "vendors-identity";
   else if (type === "item") baseFolder = "store-items";
+  else if (type === "store") baseFolder = "store-images"
   //join paths to get parent directory of files
   let relativePath = path.join("public", baseFolder, userId);
   let fullPath = path.join(abs, relativePath);

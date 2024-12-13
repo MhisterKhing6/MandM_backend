@@ -6,6 +6,7 @@ const Store = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   storeName: { type: String, required: true },
   storeAddress: { type: String },
+  images: [{type:Schema.Types.Mixed}],
   ratings: {
     type: Schema.Types.Mixed,
     default: {

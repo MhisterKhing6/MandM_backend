@@ -19,7 +19,7 @@ import Cart from "../models/cart.js";
 import { ItemModel } from "../models/items.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
-import { riderOrdersModel } from "../models/riderOrders.js";
+import {riderOrdersModel } from "../models/riderOrders.js";
 import { response } from "express";
 class UserController {
   //register user functions
@@ -211,7 +211,6 @@ class UserController {
 
   static login = async (req, res) => {
     let loginDetails = req.body;
-    console.log(loginDetails);
     if (!(loginDetails.id && loginDetails.password))
       return res.status(400).json({ message: "not all fields given" });
     //check if id is or phone number
@@ -258,7 +257,7 @@ class UserController {
 
   static getNearStoresByCategory = async (req, res) => {
     try {
-      const { longitude, latitude, maxDistance = 5000 } = req.query;
+      const { longitude, latitude, maxDistance = 500000 } = req.query;
 
       if (!longitude || !latitude) {
         return res
@@ -381,7 +380,6 @@ class UserController {
     try {
       await UserModel.findByIdAndUpdate(userId, { fcmToken: newToken });
 
-      console.log("FCM token updated successfully");
       return res.status(200).json({ message: "Fcm updated successfully" });
     } catch (error) {
       console.error("Error updating FCM token:", error);
@@ -406,7 +404,6 @@ class UserController {
           quantity: addon.quantity || 1,
         })) || [],
     };
-    console.log(newItem);
     if (!cart) {
       // If no cart exists, create a new cart with the store and item
       cart = new Cart({
@@ -491,13 +488,12 @@ class UserController {
       res.status(500).json({ error: "Failed to remove item" });
     }
   };
-
+  
   static fetchCartItems = async (req, res) => {
     const { userId } = req.params;
 
     try {
       const cart = await Cart.findOne({ userId });
-      console.log(cart);
       if (cart) {
         res.status(200).json(cart);
       } else {
@@ -548,7 +544,6 @@ class UserController {
       // Send the payment URL back to the client
       res.status(200).json({ status: true, data: response.data.data });
     } catch (error) {
-      console.error(error.response?.data || error.message);
       res
         .status(500)
         .json({ status: false, error: error.response?.data || error.message });
@@ -557,7 +552,6 @@ class UserController {
 
   static verifyPayment = async (req, res) => {
     const { reference } = req.body; // Reference sent by Paystack in the callback URL
-    console.log(reference);
     try {
       const response = await axios.get(
         `https://api.paystack.co/transaction/verify/${reference}`,
@@ -567,7 +561,6 @@ class UserController {
           },
         }
       );
-      console.log(response);
       // Handle the transaction verification response
       const { status, data } = response;
       if (status === 200 && data.data.status === "success") {

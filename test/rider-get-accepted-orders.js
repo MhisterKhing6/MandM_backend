@@ -15,10 +15,10 @@ import { ItemSizesModel } from "../models/itemSizes.js";
 import { CategoriesModel } from "../models/categories.js";
 import { OrderItemModel } from "../models/orderItems.js";
 import { OrderModel } from "../models/orders.js";
+import { riderOrdersModel } from "../models/riderOrders.js";
 
 
 describe("test codes for vendor functions", () => {
-  let url = "/vendor/store-items/8357385837583583";
   let user = "";
   let user1 = {
     role: "customer",
@@ -35,6 +35,14 @@ describe("test codes for vendor functions", () => {
     phoneNumber: "8758552214",
   };
 
+  let user3 = {
+    role: "dispatcher",
+    name: "kingsley",
+    email: "testRider@gmail.com",
+    password: sha1("987321"),
+    phoneNumber: "8758552214",
+  };
+
   let token1 = "";
   let token2 = "";
   let category = {name:"Food"};
@@ -47,6 +55,7 @@ describe("test codes for vendor functions", () => {
     await ItemSizesModel.deleteMany({})
     await OrderItemModel.deleteMany();
     await OrderModel.deleteMany({})
+    await riderOrdersModel.deleteMany({})
   });
   before(async () => {
     await UserModel.deleteMany({});
@@ -54,6 +63,7 @@ describe("test codes for vendor functions", () => {
     await Promise.all([
       new UserModel(user1).save(),
       new UserModel(user2).save(),
+      new UserModel(user3).save()
     ]);
     let response = await request(app)
       .post("/api/login")
@@ -69,6 +79,12 @@ describe("test codes for vendor functions", () => {
       .set("Accept", "application/json")
       .set("content-type", "application/json");
     token1 = customerLoginResponse.body.token;
+    let riderResponse = await request(app)
+      .post("/api/login")
+      .send({ id: user3.email, password: "987321" })
+      .set("Accept", "application/json")
+      .set("content-type", "application/json");
+    user3.token = riderResponse.body.token;
     category = await new CategoriesModel(category).save()
     //upload category item
     await new VerifyIdentityModel({userId:user, status: "verified",userPic: "path to user pic", "idCard":"path to id card"}).save();
@@ -94,25 +110,8 @@ describe("test codes for vendor functions", () => {
       .set("Authorization", `Bearer ${token2}`)
       .set("content-type", "application/json");
   });
-  it("should place order successfully placed single order no addons", async () => {
-    //find all the item sizes
-    let itemSizes = await ItemSizesModel.find().select("_id").lean();
-    //form the order object
-    let storeOrder = {storeId:store._id, address: {latitude:38.8951, longitude:-77.0364}}
-    let itemIds = itemSizes.map(item => {
-        return {itemSizeId : item._id, quantity:30};
-    })
-    //
-    storeOrder.items = itemIds;
-    //send response
-    let response = await request(app).post("/customer/order")
-    .send([storeOrder])
-    .set("Accept", "application/json")
-    .set("Authorization", `Bearer ${token1}`)
-    .set("content-type", "application/json");
-    assert.equal(200, response.status)    
-  })
-  it("should place order successfully placed single order with addons", async () => {
+
+  it("order should be accepted by rider", async () => {
     //find all the item sizes
     let itemSizes = await ItemSizesModel.find().select("_id").lean();
     //form the order object
@@ -128,8 +127,17 @@ describe("test codes for vendor functions", () => {
     .set("Accept", "application/json")
     .set("Authorization", `Bearer ${token1}`)
     .set("content-type", "application/json");
-    assert.equal(200, response.status)    
+    //accept order
+    let placedResponse = await request(app).post("/rider/order-status")
+    .send({orderId:response.body.message._id, status:"accepted"})
+    .set("Accept", "application/json")
+    .set("Authorization", `Bearer ${user3.token}`)
+    .set("content-type", "application/json"); 
+    //find orders
+    let recentOrder =  await request(app).get("/rider/accepted-orders").set("Accept", "application/json")
+    .set("Authorization", `Bearer ${user3.token}`)
+    .set("content-type", "application/json");
+    assert.equal(recentOrder.status, 200)
+    assert.isArray(recentOrder.body)
   })
-  
-
 });

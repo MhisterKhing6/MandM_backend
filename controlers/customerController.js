@@ -88,7 +88,7 @@ class CustomerController {
         order.itemCost = orderTotalPrice;
         pendingProcess.push(order.save());
         await Promise.all(pendingProcess);
-        await sendNewOrderNotification(store.userId, order);
+        //await sendNewOrderNotification(store.userId, order);
         return res.status(200).json({ message: order });
       }
     } catch (err) {

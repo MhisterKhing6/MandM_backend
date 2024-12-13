@@ -17,7 +17,7 @@ import { VerifyIdentityModel } from "../models/verifyIdentity.js";
 import { riderDetailsModel } from "../models/riderDetails.js";
 import { StoreModel } from "../models/stores.js";
 import { OrderItemModel } from "../models/orderItems.js";
-import { UserModel } from "../models/user.js";
+import { ItemModel } from "../models/items.js";
 
 class DispatcherController {
   static acceptOrRejectOrder = async (req, res) => {
@@ -38,9 +38,7 @@ class DispatcherController {
     )
       return res.status(400).json({ message: "wrong status element" });
     let order = await OrderModel.findById(details.orderId);
-    console.log(order);
     if (!order) return res.status(400).json({ message: "wrong order id" });
-
     if (details.status.toUpperCase() === "ACCEPTED") {
       //form order rider status
       await new riderOrdersModel({
@@ -48,7 +46,6 @@ class DispatcherController {
         riderId: req.user._id,
       }).save();
       //change customer order status
-      return res.status(200).json({ message: "Order accepted successfully" });
     } else if (details.status.toUpperCase() === "REJECTED") {
       let nextAvailableDriver = null;
       let availableRiders = await findAvailableRiders(
@@ -109,7 +106,7 @@ class DispatcherController {
         virtualAccountStore.save()
       );
     }
-    return res.status(200).json({});
+    return res.status(200).json({message:"order accepted"});
   };
 
   static orderStatus = async (req, res) => {
@@ -202,7 +199,6 @@ class DispatcherController {
   //
   static getAvailabilityStatus = async (req, res) => {
     let orderStatus = await getRiderStatus(req.user._id.toString());
-    console.log(orderStatus);
     return res.status(200).json({ status: orderStatus ? orderStatus : "0" });
   };
 
@@ -233,122 +229,64 @@ class DispatcherController {
     }
   };
 
-  //get all pending orders
-  // static acceptedOrders = async (req, res) => {
-  //   //rider id
-  //   let orders = await riderOrdersModel
-  //     .find({
-  //       riderId: req.user._id,
-  //       $or: [{ status: "ACCEPTED" }, { status: "PICKED" }],
-  //     })
-  //     .populate({
-  //       path: "orderId",
-  //       populate: {
-  //         path: "store",
-  //         model: StoreModel,
-  //       },
-  //     })
-  //     .populate("riderId")
-  //     .lean();
-  //   return res.status(200).json(orders);
-  // };
 
+  //get all pending orders
   static acceptedOrders = async (req, res) => {
     try {
-      // Fetch orders with status "ACCEPTED" or "PICKED" for the rider
-      let orders = await riderOrdersModel
-        .find({
-          riderId: req.user._id,
-          $or: [{ status: "ACCEPTED" }, { status: "PICKED" }],
-        })
-        .populate({
-          path: "orderId",
-          populate: {
-            path: "storeId",
-
-            model: StoreModel,
-            select: "storeName storePhone location", // Include location, phone, and name fields
-          },
-        })
-        .populate({
-          path: "orderId",
-          populate: {
-            path: "customerId",
-            model: UserModel,
-            select: "phoneNumber",
-          },
-        })
-
-        .lean();
-
-      if (!orders || orders.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "No accepted or picked orders found" });
-      }
-
-      // Extract order IDs
-      const orderIds = orders.map((order) => order.orderId._id);
-
-      // Fetch items for the orders
-      const orderItems = await OrderItemModel.find({
-        orderId: { $in: orderIds },
-      })
-        .populate({
-          path: "itemSizeId",
-          select: "name itemId",
-          populate: {
-            path: "itemId",
-            select: "name",
-          },
-        })
-        .lean();
-
-      // Map items to their respective orders
-      const orderItemsMap = orderItems.reduce((acc, item) => {
-        acc[item.orderId] = acc[item.orderId] || [];
-        acc[item.orderId].push(item);
-        return acc;
-      }, {});
-
-      // Enrich orders with items
-      const enrichedOrders = orders.map((order) => {
-        const orderData = order.orderId;
-        return {
-          ...order,
-          orderDetails: {
-            ...orderData,
-            store: orderData.store, // Includes location, phone, and name
-            items: orderItemsMap[orderData._id] || [],
-          },
-        };
-      });
-
-      return res.status(200).json(enrichedOrders);
-    } catch (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ message: "Error fetching accepted orders" });
+    //rider id
+    let orders = await riderOrdersModel.find({riderId:req.user._id, $or :[ {status:"ACCEPTED"}, {status:"PICKED"} ]}).populate({
+    path: 'orderId',
+    populate: {
+      path: 'storeId',
+      model: StoreModel,
     }
-  };
+  }).populate("riderId").lean()
+  const orderItems = []
+  for(const order of orders){
+    //find orders items and populate
+    let ordersContents = await OrderItemModel.find({orderId:order.orderId._id}).populate({
+      path: "itemSizeId",
+      populate: {
+        path:"itemId",
+        model:ItemModel
+      }
+    }).lean();
+    order.items = ordersContents;
+  }
+    return res.status(200).json(orders)
+  } catch(err) {
+    console.log(err)
+    return res.status(501).json({message: "internal error"})
+  }
+  }
 
-  //get all the orders today
-  static getAllOrders = async (req, res) => {
-    let orders = await riderOrdersModel
-      .find({ riderId: req.user._id })
-      .populate({
-        path: "orderId",
+ //get all the orders today
+ static getAllOrders  = async (req, res) => {
+  try {
+  let orders = await riderOrdersModel.find({riderId:req.user._id}).populate({
+    path: 'orderId',
+    populate: {
+      path: 'store',
+      model: StoreModel,
+    }}).populate("riderId").lean()
+    for(const order of orders){
+      //find orders items and populate
+      let ordersContents = await OrderItemModel.find({orderId:order.riderId._id}).populate({
+        path: "itemSizeId",
         populate: {
-          path: "store",
-          model: StoreModel,
-        },
-      })
-
-      .populate("riderId")
-      .lean();
-    return res.status(200).json(orders);
-  };
+          path:"itemId",
+          model:ItemModel
+        }
+      }).lean();
+      order.items = ordersContents;
+    }
+    return res.status(200).json(orders)
+  } catch(err){
+    console.log(err)
+    return res.status(500).json({message: "internal error"})
+  }
+ }
+  
 }
 
 export { DispatcherController };

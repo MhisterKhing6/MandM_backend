@@ -27,6 +27,12 @@ async function decreaseCurrentRiderOrder(riderId) {
   } 
 }
 
+async function getNumberOfRiderOngoingOrders(riderId) {
+  return await redis.hget('pendingOrders', riderId);
+}
+
+
+
 // Set rider status using a Redis Hash
 async function setRiderStatus(riderId, status) {
   await redis.hset('riderStatus', riderId, status); //"1":available, "0":"false"
@@ -152,5 +158,6 @@ export {
   getRiderStatus,
   increaseCurrentRiderOrder,
   decreaseCurrentRiderOrder,
+  getNumberOfRiderOngoingOrders,
   redis,
 };

@@ -28,7 +28,6 @@ dispatcherRoute.use(dispatcherMiddleWare);
 /**
  * adding store information
  */
-dispatcherRoute.post("/add-store-info", VendorController.addStore);
 //accept or reject order
 dispatcherRoute.post("/order-status", DispatcherController.acceptOrRejectOrder);
 
@@ -71,10 +70,16 @@ dispatcherRoute.post(
   "/rider-operation-area",
   DispatcherController.operationArea
 );
-dispatcherRoute.post("/order-status", DispatcherController.acceptOrRejectOrder);
-dispatcherRoute.get("/accepted-orders", DispatcherController.acceptedOrders);
+
+dispatcherRoute.get(
+  "/accepted-orders",
+  DispatcherController.acceptedOrders
+);
 
 //get all orders
-dispatcherRoute.get("/all-orders", DispatcherController.getAllOrders);
+dispatcherRoute.get(
+  "/all-orders",
+  DispatcherController.getAllOrders
+);
 
 export { dispatcherRoute };
